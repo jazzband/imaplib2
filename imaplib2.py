@@ -40,7 +40,7 @@ Time2Internaldate() patch to match RFC2060 specification of English month names 
 starttls() bug fixed with the help of Sebastian Spaeth <sebastian@sspaeth.de> April 2011.
 Threads now set the "daemon" flag (suggested by offlineimap-project)."""
 __author__ = "Piers Lauder <piers@janeelix.com>"
-__URL__ = "http://janeelix.com/piers/python/imaplib2"
+__URL__ = "http://imaplib2.sourceforge.net"
 __license__ = "Python License"
 
 import binascii, errno, os, Queue, random, re, select, socket, sys, time, threading, zlib
