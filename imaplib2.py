@@ -2120,10 +2120,10 @@ class _IdleCont(object):
         self.parent.idle_timeout = self.timeout + time.time()
 
     def process(self, data, rqb):
-        self.idle_lock.acquire()
+        self.parent.idle_lock.acquire()
         self.parent.idle_rqb = rqb
         self.parent.idle_timeout = self.timeout + time.time()
-        self.idle_lock.release()
+        self.parent.idle_lock.release()
         if __debug__: self.parent._log(2, 'server IDLE started, timeout in %.2f secs' % self.timeout)
         return None
 
