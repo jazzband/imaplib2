@@ -2373,11 +2373,11 @@ if __name__ == '__main__':
         run('logout', (), cb=False)
 
         if debug:
-            M._mesg(0, '')
+            M._mesg('')
             M._print_log()
-            M._mesg(0, '')
-            M._mesg(0, 'unused untagged responses in order, most recent last:')
-            for typ,dat in M.pop_untagged_responses(): M._mesg(0, '\t%s %s' % (typ, dat))
+            M._mesg('')
+            M._mesg('unused untagged responses in order, most recent last:')
+            for typ,dat in M.pop_untagged_responses(): M._mesg('\t%s %s' % (typ, dat))
 
         print 'All tests OK.'
 
