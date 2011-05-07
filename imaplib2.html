@@ -24,9 +24,9 @@ in existing clients with no changes in the code, but see the <i>caveat</i> below
 and/or <code>port</code>. The defaults are <code>localhost</code> and <code>143</code>
 - the standard <small>IMAP4</small> port number.</p>
 
-<p>There are also four other optional arguments:
-<code>debug=level, debug_file=file, identifier=string, timeout=seconds</code>.
-Setting <code>debug</code> <i>level</i> (default: 0) to anything above 3
+<p>There are also five other optional arguments:
+<code>debug=level, debug_file=file, identifier=string, timeout=seconds, debug_buf_lvl=level</code>.
+Setting <code>debug</code> <i>level</i> (default: 0) to anything above debug_buf_lvl (default: 3)
 causes every action to be printed to <i>file</i> (default: <i>sys.stderr</i>).
 Otherwise actions are logged in a circular buffer and the last 20 printed on errors.
 The third argument provides a string to be prepended to thread names - useful during debugging (default: target host).
