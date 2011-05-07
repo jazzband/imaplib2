@@ -336,6 +336,7 @@ class IMAP4(object):
         self.state_change_free = threading.Event()
         self.state_change_pending = threading.Lock()
         self.commands_lock = threading.Lock()
+        self.idle_lock = threading.Lock()
 
         self.ouq = Queue.Queue(10)
         self.inq = Queue.Queue()
@@ -1354,11 +1355,14 @@ class IMAP4(object):
 
     def _end_idle(self):
 
+        self.idle_lock.acquire()
         irqb = self.idle_rqb
         if irqb is None:
+            self.idle_lock.release()
             return
         self.idle_rqb = None
         self.idle_timeout = None
+        self.idle_lock.release()
         irqb.data = 'DONE%s' % CRLF
         self.ouq.put(irqb)
         if __debug__: self._log(2, 'server IDLE finished')
@@ -1472,7 +1476,7 @@ class IMAP4(object):
 
                 self._append_untagged(typ, dat)
 
-                if typ != 'OK':
+                if typ != 'OK':                 # NO, BYE, IDLE
                     self._end_idle()
 
         # Bracketed response information?
@@ -2116,8 +2120,10 @@ class _IdleCont(object):
         self.parent.idle_timeout = self.timeout + time.time()
 
     def process(self, data, rqb):
+        self.idle_lock.acquire()
         self.parent.idle_rqb = rqb
         self.parent.idle_timeout = self.timeout + time.time()
+        self.idle_lock.release()
         if __debug__: self.parent._log(2, 'server IDLE started, timeout in %.2f secs' % self.timeout)
         return None
 
