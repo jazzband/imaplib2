@@ -401,8 +401,8 @@ class IMAP4(object):
         This connection will be used by the routines:
             read, send, shutdown, socket."""
 
-        self.host = host is not None and host or ''
-        self.port = port is not None and port or IMAP4_PORT
+        self.host = self._choose_nonull_or_dflt('', host)
+        self.port = self._choose_nonull_or_dflt(IMAP4_PORT, port)
         self.sock = self.open_socket()
         self.read_fd = self.sock.fileno()
 
@@ -1189,6 +1189,17 @@ class IMAP4(object):
         return self._quote(arg)
 
 
+    def _choose_nonull_or_dflt(self, dflt, *args):
+        dflttyp = type(dflt)
+        for arg in args:
+            if arg is not None:
+                 if type(arg) is not dflttyp:
+                     if __debug__: self._log(1, 'bad arg type is %s, expecting %s' % (type(arg), dflttyp))
+                     continue
+                 return arg
+        return dflt
+
+
     def _command(self, name, *args, **kw):
 
         if Commands[name][CMD_VAL_ASYNC]:
@@ -1823,9 +1834,9 @@ class IMAP4(object):
     if __debug__:
 
         def _init_debug(self, debug=None, debug_file=None, debug_buf_lvl=None):
-            self.debug = debug is not None and debug or Debug is not None and Debug or 0
-            self.debug_file = debug_file is not None and debug_file or sys.stderr
-            self.debug_buf_lvl = debug_buf_lvl is not None and debug_buf_lvl or DFLT_DEBUG_BUF_LVL
+            self.debug = self._choose_nonull_or_dflt(0, debug, Debug)
+            self.debug_file = self._choose_nonull_or_dflt(sys.stderr, debug_file)
+            self.debug_buf_lvl = self._choose_nonull_or_dflt(DFLT_DEBUG_BUF_LVL, debug_buf_lvl)
 
             self.debug_lock = threading.Lock()
             self._cmd_log_len = 20
@@ -1939,8 +1950,8 @@ class IMAP4_SSL(IMAP4):
         This connection will be used by the routines:
             read, send, shutdown, socket, ssl."""
 
-        self.host = host is not None and host or ''
-        self.port = port is not None and port or IMAP4_SSL_PORT
+        self.host = self._choose_nonull_or_dflt('', host)
+        self.port = self._choose_nonull_or_dflt(IMAP4_SSL_PORT, port)
         self.sock = self.open_socket()
 
         try:
@@ -2116,7 +2127,7 @@ class _IdleCont(object):
 
     def __init__(self, parent, timeout):
         self.parent = parent
-        self.timeout = timeout is not None and timeout or IDLE_TIMEOUT
+        self.timeout = parent._choose_nonull_or_dflt(IDLE_TIMEOUT, timeout)
         self.parent.idle_timeout = self.timeout + time.time()
 
     def process(self, data, rqb):
