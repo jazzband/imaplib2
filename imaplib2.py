@@ -1193,10 +1193,9 @@ class IMAP4(object):
         dflttyp = type(dflt)
         for arg in args:
             if arg is not None:
-                 if type(arg) is not dflttyp:
-                     if __debug__: self._log(1, 'bad arg type is %s, expecting %s' % (type(arg), dflttyp))
-                     continue
-                 return arg
+                 if type(arg) is dflttyp:
+                     return arg
+                 if __debug__: self._log(1, 'bad arg type is %s, expecting %s' % (type(arg), dflttyp))
         return dflt
 
 
