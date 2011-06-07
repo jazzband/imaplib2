@@ -1552,12 +1552,12 @@ class IMAP4(object):
         data = self._get_untagged_response(name)
         if not data:
             return typ, [None]
-        data = [data]
         while True:
             dat = self._get_untagged_response(name)
             if not dat:
                 break
             data += dat
+        if __debug__: self._log(4, '_untagged_response(%s, ?, %s) => %s' % (typ, name, data))
         return typ, data
 
 
