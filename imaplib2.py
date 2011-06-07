@@ -1559,6 +1559,11 @@ class IMAP4(object):
         data = self._get_untagged_response(name)
         if not data:
             return typ, [None]
+        while True:
+            dat = self._get_untagged_response(name)
+            if not dat:
+                break
+            data += dat
         return typ, data
 
 
