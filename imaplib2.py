@@ -530,7 +530,7 @@ class IMAP4(object):
 
         name = 'RECENT'
         data = self._untagged_response(None, None, name)[1]
-        if data:
+        if data != [None]:
             return self._deliver_dat(name, data, kw)
         kw['untagged_response'] = name
         return self.noop(**kw)  # Prod server for response
@@ -1552,6 +1552,7 @@ class IMAP4(object):
         data = self._get_untagged_response(name)
         if not data:
             return typ, [None]
+        data = [data]
         while True:
             dat = self._get_untagged_response(name)
             if not dat:
