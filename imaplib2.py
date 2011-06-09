@@ -529,9 +529,9 @@ class IMAP4(object):
         else list of RECENT responses, most recent last."""
 
         name = 'RECENT'
-        data = self._untagged_response(None, None, name)[1]
-        if data != [None]:
-            return self._deliver_dat(name, data, kw)
+        typ, dat = self._untagged_response(None, [None], name)
+        if dat != [None]:
+            return self._deliver_dat(typ, dat, kw)
         kw['untagged_response'] = name
         return self.noop(**kw)  # Prod server for response
 
