@@ -17,9 +17,9 @@ Public functions: Internaldate2Time
 __all__ = ("IMAP4", "IMAP4_SSL", "IMAP4_stream",
            "Internaldate2Time", "ParseFlags", "Time2Internaldate")
 
-__version__ = "2.24"
+__version__ = "2.25"
 __release__ = "2"
-__revision__ = "24"
+__revision__ = "25"
 __credits__ = """
 Authentication code contributed by Donn Cave <donn@u.washington.edu> June 1998.
 String method conversion by ESR, February 2001.
