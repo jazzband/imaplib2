@@ -57,7 +57,7 @@ IMAP4_SSL_PORT = 993
 IDLE_TIMEOUT_RESPONSE = '* IDLE TIMEOUT\r\n'
 IDLE_TIMEOUT = 60*29                            # Don't stay in IDLE state longer
 READ_POLL_TIMEOUT = 30                          # Without this timeout interrupted network connections can hang reader
-READ_SIZE = 32768				# Consume all available in socket
+READ_SIZE = 32768                               # Consume all available in socket
 
 DFLT_DEBUG_BUF_LVL = 3                          # Level above which the logging output goes directly to stderr
 
@@ -994,8 +994,8 @@ class IMAP4(object):
         return self._simple_command(name, sort_criteria, charset, *search_criteria, **kw)
 
 
-    def starttls(self, keyfile=None, certfile=None, ca_certs=None, cert_reqs=None, cert_verify_cb=None, **kw):
-        """(typ, [data]) = starttls(keyfile=None, certfile=None, ca_certs=None, cert_reqs=None, cert_verify_cb=None)
+    def starttls(self, keyfile=None, certfile=None, ca_certs=None, cert_verify_cb=None, **kw):
+        """(typ, [data]) = starttls(keyfile=None, certfile=None, ca_certs=None, cert_verify_cb=None)
         Start TLS negotiation as per RFC 2595."""
 
         name = 'STARTTLS'
@@ -1008,7 +1008,7 @@ class IMAP4(object):
 
         # Must now shutdown reader thread after next response, and restart after changing read_fd
 
-        self.read_size = 1                # Don't consume TLS handshake	
+        self.read_size = 1                # Don't consume TLS handshake
         self.TerminateReader = True
 
         try:
@@ -1029,7 +1029,10 @@ class IMAP4(object):
         try:
             try:
                 import ssl
-                if cert_reqs is None: cert_reqs = ssl.CERT_NONE
+                if ca_certs is not None:
+                    cert_reqs = ssl.CERT_REQUIRED
+                else:
+                    cert_reqs = ssl.CERT_NONE
                 self.sock = ssl.wrap_socket(self.sock, keyfile, certfile, ca_certs=ca_certs, cert_reqs=cert_reqs)
                 ssl_exc = ssl.SSLError
             except ImportError:
