@@ -372,9 +372,11 @@ so other responses should be obtained by calling <code>response('FLAGS')</code> 
 <DD><small>IMAP4</small>rev1 extension <small>SORT</small> command.</DD>
 
 <br>
-<DT><code>starttls</code>(<I>keyfile</I>=<code>None</code>, <I>certfile</I>=<code>None</code>)</DT>
+<DT><code>starttls</code>(<I>keyfile</I>, <I>certfile</I>, <I>ca_certs</I>, <I>cert_reqs</I>, <I>cert_verify_cb</I>)</DT>
 <DD>Start TLS negotiation as per RFC 2595.
-Should be called from user of this class after instantiation, as in:
+If non-null, <I>cert_verify_cb</I> will be called after successful establishment, with socket and hostname as parameters.
+It it returns a non-null response, an error will be raised.
+<code>starttls</code> should be called from user of <SMALL>IMAP4</SMALL> class after instantiation, as in:
 <PRE>
 	if 'STARTTLS' in imapobj.capabilities:
 		imapobj.starttls()

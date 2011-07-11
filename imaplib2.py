@@ -17,9 +17,9 @@ Public functions: Internaldate2Time
 __all__ = ("IMAP4", "IMAP4_SSL", "IMAP4_stream",
            "Internaldate2Time", "ParseFlags", "Time2Internaldate")
 
-__version__ = "2.25"
+__version__ = "2.26"
 __release__ = "2"
-__revision__ = "25"
+__revision__ = "26"
 __credits__ = """
 Authentication code contributed by Donn Cave <donn@u.washington.edu> June 1998.
 String method conversion by ESR, February 2001.
@@ -994,8 +994,8 @@ class IMAP4(object):
         return self._simple_command(name, sort_criteria, charset, *search_criteria, **kw)
 
 
-    def starttls(self, keyfile=None, certfile=None, **kw):
-        """(typ, [data]) = starttls(keyfile=None, certfile=None)
+    def starttls(self, keyfile=None, certfile=None, ca_certs=None, cert_reqs=None, cert_verify_cb=None, **kw):
+        """(typ, [data]) = starttls(keyfile=None, certfile=None, ca_certs=None, cert_reqs=None, cert_verify_cb=None)
         Start TLS negotiation as per RFC 2595."""
 
         name = 'STARTTLS'
@@ -1029,9 +1029,17 @@ class IMAP4(object):
         try:
             try:
                 import ssl
-                self.sock = ssl.wrap_socket(self.sock, keyfile, certfile)
+                if cert_reqs is None: cert_reqs = ssl.CERT_NONE
+                self.sock = ssl.wrap_socket(self.sock, keyfile, certfile, ca_certs=ca_certs, cert_reqs=cert_reqs)
+                ssl_exc = ssl.SSLError
             except ImportError:
                 self.sock = socket.ssl(self.sock, keyfile, certfile)
+                ssl_exc = socket.sslerror
+
+            if cert_verify_cb is not None:
+                cert_err = cert_verify_cb(self.sock, self.host)
+                if cert__err:
+                    raise ssl_exc("SSL Certificate host name mismatch: %s" % cert_err)
 
             self.read_fd = self.sock.fileno()
         finally:
