@@ -1042,7 +1042,7 @@ class IMAP4(object):
             if cert_verify_cb is not None:
                 cert_err = cert_verify_cb(self.sock, self.host)
                 if cert__err:
-                    raise ssl_exc("SSL Certificate host name mismatch: %s" % cert_err)
+                    raise ssl_exc(cert_err)
 
             self.read_fd = self.sock.fileno()
         finally:
@@ -1933,22 +1933,27 @@ class IMAP4_SSL(IMAP4):
     Instantiate with:
         IMAP4_SSL(host=None, port=None, keyfile=None, certfile=None, debug=None, debug_file=None, identifier=None, timeout=None)
 
-        host       - host's name (default: localhost);
-        port       - port number (default: standard IMAP4 SSL port);
-        keyfile    - PEM formatted file that contains your private key (default: None);
-        certfile   - PEM formatted certificate chain file (default: None);
-        debug      - debug level (default: 0 - no debug);
-        debug_file - debug stream (default: sys.stderr);
-        identifier - thread identifier prefix (default: host);
-        timeout    - timeout in seconds when expecting a command response.
+        host           - host's name (default: localhost);
+        port           - port number (default: standard IMAP4 SSL port);
+        keyfile        - PEM formatted file that contains your private key (default: None);
+        certfile       - PEM formatted certificate chain file (default: None);
+        ca_certs       - PEM formatted certificate chain file used to validate server certificates (default: None);
+        cert_verify_cb - function to verify authenticity of server certificates (default: None);
+        debug          - debug level (default: 0 - no debug);
+        debug_file     - debug stream (default: sys.stderr);
+        identifier     - thread identifier prefix (default: host);
+        timeout        - timeout in seconds when expecting a command response.
+        debug_buf_lvl  - debug level at which buffering is turned off.
 
     For more documentation see the docstring of the parent class IMAP4.
     """
 
 
-    def __init__(self, host=None, port=None, keyfile=None, certfile=None, debug=None, debug_file=None, identifier=None, timeout=None, debug_buf_lvl=None):
+    def __init__(self, host=None, port=None, keyfile=None, certfile=None, ca_certs=None, cert_verify_cb=None, debug=None, debug_file=None, identifier=None, timeout=None, debug_buf_lvl=None):
         self.keyfile = keyfile
         self.certfile = certfile
+        self.ca_certs = ca_certs
+        self.cert_verify_cb = cert_verify_cb
         IMAP4.__init__(self, host, port, debug, debug_file, identifier, timeout, debug_buf_lvl)
 
 
@@ -1965,9 +1970,20 @@ class IMAP4_SSL(IMAP4):
 
         try:
             import ssl
-            self.sslobj = ssl.wrap_socket(self.sock, self.keyfile, self.certfile)
+            if self.ca_certs is not None:
+                cert_reqs = ssl.CERT_REQUIRED
+            else:
+                cert_reqs = ssl.CERT_NONE
+            self.sock = ssl.wrap_socket(self.sock, self.keyfile, self.certfile, ca_certs=self.ca_certs, cert_reqs=cert_reqs)
+            ssl_exc = ssl.SSLError
         except ImportError:
-            self.sslobj = socket.ssl(self.sock, self.keyfile, self.certfile)
+            self.sock = socket.ssl(self.sock, self.keyfile, self.certfile)
+            ssl_exc = socket.sslerror
+
+        if self.cert_verify_cb is not None:
+            cert_err = self.cert_verify_cb(self.sock, self.host)
+            if cert__err:
+                raise ssl_exc(cert_err)
 
         self.read_fd = self.sock.fileno()
 
@@ -1977,12 +1993,12 @@ class IMAP4_SSL(IMAP4):
         Read at most 'size' bytes from remote."""
 
         if self.decompressor is None:
-            return self.sslobj.read(size)
+            return self.sock.read(size)
 
         if self.decompressor.unconsumed_tail:
             data = self.decompressor.unconsumed_tail
         else:
-            data = self.sslobj.read(8192)
+            data = self.sock.read(8192)
 
         return self.decompressor.decompress(data, size)
 
@@ -1995,21 +2011,23 @@ class IMAP4_SSL(IMAP4):
             data = self.compressor.compress(data)
             data += self.compressor.flush(zlib.Z_SYNC_FLUSH)
 
-        # NB: socket.ssl needs a "sendall" method to match socket objects.
-        bytes = len(data)
-        while bytes > 0:
-            sent = self.sslobj.write(data)
-            if sent == bytes:
-                break    # avoid copy
-            data = data[sent:]
-            bytes = bytes - sent
+        if hasattr(self.sock, "sendall"):
+            self.sock.sendall(data)
+        else:
+            bytes = len(data)
+            while bytes > 0:
+                sent = self.sock.write(data)
+                if sent == bytes:
+                    break    # avoid copy
+                data = data[sent:]
+                bytes = bytes - sent
 
 
     def ssl(self):
         """ssl = ssl()
         Return socket.ssl instance used to communicate with the IMAP4 server."""
 
-        return self.sslobj
+        return self.sock
 
 
 
@@ -2018,13 +2036,14 @@ class IMAP4_stream(IMAP4):
     """IMAP4 client class over a stream
 
     Instantiate with:
-        IMAP4_stream(command, debug=None, debug_file=None, identifier=None, timeout=None)
+        IMAP4_stream(command, debug=None, debug_file=None, identifier=None, timeout=None, debug_buf_lvl=None)
 
-        command    - string that can be passed to subprocess.Popen();
-        debug      - debug level (default: 0 - no debug);
-        debug_file - debug stream (default: sys.stderr);
-        identifier - thread identifier prefix (default: host);
-        timeout    - timeout in seconds when expecting a command response.
+        command        - string that can be passed to subprocess.Popen();
+        debug          - debug level (default: 0 - no debug);
+        debug_file     - debug stream (default: sys.stderr);
+        identifier     - thread identifier prefix (default: host);
+        timeout        - timeout in seconds when expecting a command response.
+        debug_buf_lvl  - debug level at which buffering is turned off.
 
     For more documentation see the docstring of the parent class IMAP4.
     """
