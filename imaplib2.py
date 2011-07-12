@@ -1026,6 +1026,10 @@ class IMAP4(object):
             self.rdth.start()
             raise self.error("Couldn't establish TLS session: %s" % dat)
 
+        # Allow sending of keep-alive message seems to prevent some servers
+        # from closing SSL on us leading to deadlocks
+        self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+
         try:
             try:
                 import ssl
@@ -1040,7 +1044,7 @@ class IMAP4(object):
                 ssl_exc = socket.sslerror
 
             if cert_verify_cb is not None:
-                cert_err = cert_verify_cb(self.sock, self.host)
+                cert_err = cert_verify_cb(self.sock.getpeercert(), self.host)
                 if cert__err:
                     raise ssl_exc(cert_err)
 
@@ -1968,6 +1972,10 @@ class IMAP4_SSL(IMAP4):
         self.port = self._choose_nonull_or_dflt(IMAP4_SSL_PORT, port)
         self.sock = self.open_socket()
 
+        # Allow sending of keep-alive message seems to prevent some servers
+        # from closing SSL on us leading to deadlocks
+        self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+
         try:
             import ssl
             if self.ca_certs is not None:
@@ -1981,7 +1989,7 @@ class IMAP4_SSL(IMAP4):
             ssl_exc = socket.sslerror
 
         if self.cert_verify_cb is not None:
-            cert_err = self.cert_verify_cb(self.sock, self.host)
+            cert_err = self.cert_verify_cb(self.sock.getpeercert(), self.host)
             if cert__err:
                 raise ssl_exc(cert_err)
 
