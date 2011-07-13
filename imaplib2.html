@@ -376,7 +376,7 @@ so other responses should be obtained by calling <code>response('FLAGS')</code> 
 <DD>Start TLS negotiation as per RFC 2595.
 If non-null, <I>cert_verify_cb</I> will be called to verify the server certificate,
 with peer certificate and hostname as parameters.
-It <I>cert_verify_cb</I> returns a non-null response, an SSL exception will be raised with the response as reason.
+If <I>cert_verify_cb</I> returns a non-null response, an SSL exception will be raised with the response as reason.
 <code>starttls</code> should be called from user of the <SMALL>IMAP4</SMALL> class after instantiation, as in:
 <PRE>
 	if 'STARTTLS' in imapobj.capabilities:
