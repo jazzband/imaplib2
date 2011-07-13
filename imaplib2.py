@@ -440,8 +440,8 @@ class IMAP4(object):
 
     def ssl_wrap_socket(self):
 
-        # Allow sending of keep-alive message seems to prevent some servers
-        # from closing SSL on us leading to deadlocks
+        # Allow sending of keep-alive messages - seems to prevent some servers
+        # from closing SSL, leading to deadlocks.
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
 
         try:
@@ -455,7 +455,7 @@ class IMAP4(object):
         except ImportError:
             # No ssl module, and socket.ssl does not allow certificate verification
             if self.ca_certs is not None:
-                raise socket.sslerror("SSL CA certificates cannot be checked in this version")
+                raise socket.sslerror("SSL CA certificates cannot be checked without ssl module")
             self.sock = socket.ssl(self.sock, self.keyfile, self.certfile)
             ssl_exc = socket.sslerror
 
