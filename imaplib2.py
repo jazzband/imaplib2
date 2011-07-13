@@ -438,6 +438,35 @@ class IMAP4(object):
         return s
 
 
+    def ssl_wrap_socket(self):
+
+        # Allow sending of keep-alive message seems to prevent some servers
+        # from closing SSL on us leading to deadlocks
+        self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+
+        try:
+            import ssl
+            if self.ca_certs is not None:
+                cert_reqs = ssl.CERT_REQUIRED
+            else:
+                cert_reqs = ssl.CERT_NONE
+            self.sock = ssl.wrap_socket(self.sock, self.keyfile, self.certfile, ca_certs=self.ca_certs, cert_reqs=cert_reqs)
+            ssl_exc = ssl.SSLError
+        except ImportError:
+            # No ssl module, and socket.ssl does not allow certificate verification
+            if self.ca_certs is not None:
+                raise socket.sslerror("SSL CA certificates cannot be checked in this version")
+            self.sock = socket.ssl(self.sock, self.keyfile, self.certfile)
+            ssl_exc = socket.sslerror
+
+        if self.cert_verify_cb is not None:
+            cert_err = self.cert_verify_cb(self.sock.getpeercert(), self.host)
+            if cert__err:
+                raise ssl_exc(cert_err)
+
+        self.read_fd = self.sock.fileno()
+
+
     def start_compressing(self):
         """start_compressing()
         Enable deflate compression on the socket (RFC 4978)."""
@@ -1026,29 +1055,13 @@ class IMAP4(object):
             self.rdth.start()
             raise self.error("Couldn't establish TLS session: %s" % dat)
 
-        # Allow sending of keep-alive message seems to prevent some servers
-        # from closing SSL on us leading to deadlocks
-        self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+        self.keyfile = keyfile
+        self.certfile = certfile
+        self.ca_certs = ca_certs
+        self.cert_verify_cb = cert_verify_cb
 
         try:
-            try:
-                import ssl
-                if ca_certs is not None:
-                    cert_reqs = ssl.CERT_REQUIRED
-                else:
-                    cert_reqs = ssl.CERT_NONE
-                self.sock = ssl.wrap_socket(self.sock, keyfile, certfile, ca_certs=ca_certs, cert_reqs=cert_reqs)
-                ssl_exc = ssl.SSLError
-            except ImportError:
-                self.sock = socket.ssl(self.sock, keyfile, certfile)
-                ssl_exc = socket.sslerror
-
-            if cert_verify_cb is not None:
-                cert_err = cert_verify_cb(self.sock.getpeercert(), self.host)
-                if cert__err:
-                    raise ssl_exc(cert_err)
-
-            self.read_fd = self.sock.fileno()
+            self.ssl_wrap_socket()
         finally:
             # Restart reader thread
             self.rdth = threading.Thread(target=self._reader)
@@ -1971,29 +1984,7 @@ class IMAP4_SSL(IMAP4):
         self.host = self._choose_nonull_or_dflt('', host)
         self.port = self._choose_nonull_or_dflt(IMAP4_SSL_PORT, port)
         self.sock = self.open_socket()
-
-        # Allow sending of keep-alive message seems to prevent some servers
-        # from closing SSL on us leading to deadlocks
-        self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
-
-        try:
-            import ssl
-            if self.ca_certs is not None:
-                cert_reqs = ssl.CERT_REQUIRED
-            else:
-                cert_reqs = ssl.CERT_NONE
-            self.sock = ssl.wrap_socket(self.sock, self.keyfile, self.certfile, ca_certs=self.ca_certs, cert_reqs=cert_reqs)
-            ssl_exc = ssl.SSLError
-        except ImportError:
-            self.sock = socket.ssl(self.sock, self.keyfile, self.certfile)
-            ssl_exc = socket.sslerror
-
-        if self.cert_verify_cb is not None:
-            cert_err = self.cert_verify_cb(self.sock.getpeercert(), self.host)
-            if cert__err:
-                raise ssl_exc(cert_err)
-
-        self.read_fd = self.sock.fileno()
+        self.ssl_wrap_socket()
 
 
     def read(self, size):
