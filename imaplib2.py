@@ -17,9 +17,9 @@ Public functions: Internaldate2Time
 __all__ = ("IMAP4", "IMAP4_SSL", "IMAP4_stream",
            "Internaldate2Time", "ParseFlags", "Time2Internaldate")
 
-__version__ = "2.26"
+__version__ = "2.27"
 __release__ = "2"
-__revision__ = "26"
+__revision__ = "27"
 __credits__ = """
 Authentication code contributed by Donn Cave <donn@u.washington.edu> June 1998.
 String method conversion by ESR, February 2001.
@@ -38,7 +38,8 @@ Improved timeout handling contributed by Ivan Vovnenko <ivovnenko@gmail.com> Oct
 Timeout handling further improved by Ethan Glasser-Camp <glasse@cs.rpi.edu> December 2010.
 Time2Internaldate() patch to match RFC2060 specification of English month names from bugs.python.org/issue11024 March 2011.
 starttls() bug fixed with the help of Sebastian Spaeth <sebastian@sspaeth.de> April 2011.
-Threads now set the "daemon" flag (suggested by offlineimap-project)."""
+Threads now set the "daemon" flag (suggested by offlineimap-project) April 2011.
+Single quoting introduced with the help of Vladimir Marek <vladimir.marek@oracle.com> August 2011."""
 __author__ = "Piers Lauder <piers@janeelix.com>"
 __URL__ = "http://imaplib2.sourceforge.net"
 __license__ = "Python License"
@@ -137,11 +138,14 @@ class Request(object):
 
     """Private class to represent a request awaiting response."""
 
-    def __init__(self, parent, name=None, callback=None, cb_arg=None):
+    def __init__(self, parent, name=None, callback=None, cb_arg=None, cb_self=False):
         self.parent = parent
         self.name = name
-        self.callback = callback    # Function called to process result
-        self.callback_arg = cb_arg  # Optional arg passed to "callback"
+        self.callback = callback               # Function called to process result
+        if not cb_self:
+            self.callback_arg = cb_arg         # Optional arg passed to "callback"
+        else:
+            self.callback_arg = (self, cb_arg) # Self reference required in callback arg
 
         self.tag = '%s%s' % (parent.tagpre, parent.tagnum)
         parent.tagnum += 1
@@ -235,12 +239,17 @@ class IMAP4(object):
     All (non-callback) arguments to commands are converted to strings,
     except for AUTHENTICATE, and the last argument to APPEND which is
     passed as an IMAP4 literal.  If necessary (the string contains any
-    non-printing characters or white-space and isn't enclosed with either
-    parentheses or double quotes) each string is quoted.  However, the
-    'password' argument to the LOGIN command is always quoted.  If you
-    want to avoid having an argument string quoted (eg: the 'flags'
-    argument to STORE) then enclose the string in parentheses (eg:
-    "(\Deleted)").
+    non-printing characters or white-space and isn't enclosed with
+    either parentheses or double or single quotes) each string is
+    quoted.  However, the 'password' argument to the LOGIN command is
+    always quoted.  If you want to avoid having an argument string
+    quoted (eg: the 'flags' argument to STORE) then enclose the string
+    in parentheses (eg: "(\Deleted)"). If you are using "sequence sets"
+    containing the wildcard character '*', then enclose the argument
+    in single quotes: the quotes will be removed and the resulting
+    string passed unquoted. Note also that you can pass in an argument
+    with a type that doesn't evaluate to 'basestring' (eg: 'bytearray')
+    and it will be converted to a string without quoting.
 
     There is one instance variable, 'state', that is useful for tracking
     whether the client needs to login to the server. If it has the
@@ -272,6 +281,7 @@ class IMAP4(object):
         # so match not the inverse set
     mustquote_cre = re.compile(r"[^!#$&'+,./0-9:;<=>?@A-Z\[^_`a-z|}~-]")
     response_code_cre = re.compile(r'\[(?P<type>[A-Z-]+)( (?P<data>[^\]]*))?\]')
+    # sequence_set_cre = re.compile(r"^[0-9]+(:([0-9]+|\*))?(,[0-9]+(:([0-9]+|\*))?)*$")
     untagged_response_cre = re.compile(r'\* (?P<type>[A-Z-]+)( (?P<data>.*))?')
     untagged_status_cre = re.compile(r'\* (?P<data>\d+) (?P<type>[A-Z-]+)( (?P<data2>.*))?')
 
@@ -1199,12 +1209,14 @@ class IMAP4(object):
     def _checkquote(self, arg):
 
         # Must quote command args if "atom-specials" present,
-        # and not already quoted.
+        # and not already quoted. NB: single quotes are removed.
 
         if not isinstance(arg, basestring):
             return arg
         if len(arg) >= 2 and (arg[0],arg[-1]) in (('(',')'),('"','"')):
             return arg
+        if len(arg) >= 2 and (arg[0],arg[-1]) in (("'","'"),):
+            return arg[1:-1]
         if arg and self.mustquote_cre.search(arg) is None:
             return arg
         return self._quote(arg)
@@ -1567,8 +1579,7 @@ class IMAP4(object):
     def _simple_command(self, name, *args, **kw):
 
         if 'callback' in kw:
-            rqb = self._command(name, callback=self._command_completer, *args)
-            rqb.callback_arg = (rqb, kw)
+            self._command(name, *args, callback=self._command_completer, cb_arg=kw, cb_self=True)
             return (None, None)
         return self._command_complete(self._command(name, *args), kw)
 
@@ -2311,7 +2322,7 @@ if __name__ == '__main__':
     ('list', ('/tmp', 'imaplib2_test*')),
     ('select', ('/tmp/imaplib2_test.2',)),
     ('search', (None, 'SUBJECT', 'IMAP4 test')),
-    ('fetch', ('1', '(FLAGS INTERNALDATE RFC822)')),
+    ('fetch', ("'1:*'", '(FLAGS INTERNALDATE RFC822)')),
     ('store', ('1', 'FLAGS', '(\Deleted)')),
     ('namespace', ()),
     ('expunge', ()),

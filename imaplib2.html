@@ -132,12 +132,30 @@ and the last argument to <code>append</code> which is passed as an <small>IMAP4<
 If necessary
 (the string contains any
 non-printing characters or white-space and isn't enclosed with either
-parentheses or double quotes)
+parentheses or double quotes or single quotes)
 each string is quoted.
 However, the <I>password</I> argument to the <code>login</code> command is always quoted.</p>
-If you want to avoid having an argument string quoted
+
+<p>If you want to avoid having an argument string quoted
 (eg: the <i>flags</i> argument to <code>store</code>)
 then enclose the string in parentheses (eg: <code>(\Deleted)</code>).
+If you are using <I>sequence sets</I>
+containing the wildcard character '*', then enclose the argument
+in single quotes: the quotes will be removed and the resulting
+string passed unquoted.</p>
+
+<p>To summarise the quoting rules:
+<ul>
+<li>a string is automatically quoted if it contains at least one of the
+<mall>IMAP4</small> <I>atom-special</I> characters with the following exceptions:
+<li>the password argument to the <code>login</code> command is always quoted;
+<li>a string enclosed in <code>"..."</code> or <code>(...)</code> is passed as is;
+<li>a string enclosed in <code>'...'</code> is stripped of the enclosing single
+quotes and the rest passed as is.
+</ul>
+
+<p>Note also that you can pass in an argument with a type that doesn't evaluate to <i>basestring</i>
+(eg: <code>bytearray</code>) and it will be converted to a string without quoting.</p>
 
 <p>There is one instance variable, <code>state</code>, that is useful for tracking
 whether the client needs to login to the server. If it has the
