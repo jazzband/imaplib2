@@ -274,9 +274,10 @@ followed by a string containing the trailer.</DD>
 <br>
 <DT><code>id</code>(<i>field1, value1, ...</i>)</DT>
 <DD>IMAP4 <small>ID</small> extension:
-request server information for problem analysis and determination.
-The ID extension is defined in RFC 2971.
-.</DD>
+exchange information for problem analysis and determination.
+NB: a single argument is assumed to be correctly formatted and is passed through unchanged
+(for backward compatibility with earlier version).
+The ID extension is defined in RFC 2971.</DD>
 
 <br>
 <DT><code>idle</code>(<i>timeout=</i><code>None</code>)</DT>

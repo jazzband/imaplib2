@@ -89,7 +89,7 @@ Commands = {
         'GETANNOTATION':((AUTH, SELECTED),            True),
         'GETQUOTA':     ((AUTH, SELECTED),            True),
         'GETQUOTAROOT': ((AUTH, SELECTED),            True),
-        'ID':           ((NONAUTH, AUTH, SELECTED),   True),
+        'ID':           ((NONAUTH, AUTH, LOGOUT, SELECTED),   True),
         'IDLE':         ((SELECTED,),                 False),
         'LIST':         ((AUTH, SELECTED),            True),
         'LOGIN':        ((NONAUTH,),                  False),
@@ -705,7 +705,7 @@ class IMAP4(object):
 
 
     def examine(self, mailbox='INBOX', **kw):
-        """(typ, [data]) = examine(mailbox='INBOX', readonly=False)
+        """(typ, [data]) = examine(mailbox='INBOX')
         Select a mailbox for READ-ONLY access. (Flushes all untagged responses.)
         'data' is count of messages in mailbox ('EXISTS' response).
         Mandated responses are ('FLAGS', 'EXISTS', 'RECENT', 'UIDVALIDITY'), so
@@ -779,13 +779,23 @@ class IMAP4(object):
 
     def id(self, *kv_pairs, **kw):
         """(typ, [data]) = <instance>.id(kv_pairs)
-        'data' is list of ID key value pairs.
-        Request information for problem analysis and determination.
+        'kv_pairs' is a possibly empty list of keys and values.
+        'data' is a list of ID key value pairs or NIL.
+        NB: a single argument is assumed to be correctly formatted and is passed through unchanged
+        (for backward compatibility with earlier version).
+        Exchange information for problem analysis and determination.
         The ID extension is defined in RFC 2971. """
 
         name = 'ID'
         kw['untagged_response'] = name
-        return self._simple_command(name, *kv_pairs, **kw)
+
+        if not kv_pairs:
+            data = 'NIL'
+        elif len(kv_pairs) == 1:
+            data = kv_pairs[0]     # Assume invoker passing correctly formatted string (back-compat)
+        else:
+            data = '(%s)' % ' '.join([(arg and self._quote(arg) or 'NIL') for arg in kv_pairs])
+        return self._simple_command(name, (data,), **kw)
 
 
     def idle(self, timeout=None, **kw):
@@ -2406,6 +2416,9 @@ if __name__ == '__main__':
             else: path = ml.split()[-1]
             run('delete', (path,))
 
+        if 'ID' in M.capabilities:
+            run('id', ())
+ 
         for cmd,args in test_seq2:
             if (cmd,args) != ('uid', ('SEARCH', 'SUBJECT', 'IMAP4 test')):
                 run(cmd, args)
