@@ -471,7 +471,7 @@ class IMAP4(object):
 
         if self.cert_verify_cb is not None:
             cert_err = self.cert_verify_cb(self.sock.getpeercert(), self.host)
-            if cert__err:
+            if cert_err:
                 raise ssl_exc(cert_err)
 
         self.read_fd = self.sock.fileno()
@@ -2418,6 +2418,8 @@ if __name__ == '__main__':
 
         if 'ID' in M.capabilities:
             run('id', ())
+            run('id', ('("name", "imaplib2")',))
+            run('id', ("version", __version__, "os", os.uname()[0]))
  
         for cmd,args in test_seq2:
             if (cmd,args) != ('uid', ('SEARCH', 'SUBJECT', 'IMAP4 test')):
