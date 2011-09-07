@@ -1,1 +1,1 @@
-from imaplib2.imaplib2 import *
+from imaplib2 import *
