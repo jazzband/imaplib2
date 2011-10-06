@@ -92,6 +92,7 @@ Commands = {
         'ID':           ((NONAUTH, AUTH, LOGOUT, SELECTED),   True),
         'IDLE':         ((SELECTED,),                 False),
         'LIST':         ((AUTH, SELECTED),            True),
+        'XLIST':        ((AUTH, SELECTED),            True),
         'LOGIN':        ((NONAUTH,),                  False),
         'LOGOUT':       ((NONAUTH, AUTH, LOGOUT, SELECTED),   False),
         'LSUB':         ((AUTH, SELECTED),            True),
@@ -825,6 +826,18 @@ class IMAP4(object):
         kw['untagged_response'] = name
         return self._simple_command(name, directory, pattern, **kw)
 
+    def xlist(self, directory='""', pattern='*', **kw):
+        """(typ, [data]) = list(directory='""', pattern='*')
+        List mailbox names in directory matching pattern.
+        'data' is list of LIST responses.
+
+        NB: for 'pattern':
+        % matches all except separator ( so LIST "" "%" returns names at root)
+        * matches all (so LIST "" "*" returns whole directory tree from root)"""
+
+        name = 'XLIST'
+        kw['untagged_response'] = name
+        return self._simple_command(name, directory, pattern, **kw)
 
     def login(self, user, password, **kw):
         """(typ, [data]) = login(user, password)
