@@ -1591,7 +1591,8 @@ class IMAP4(object):
     def _simple_command(self, name, *args, **kw):
 
         if 'callback' in kw:
-            self._command(name, *args, callback=self._command_completer, cb_arg=kw, cb_self=True)
+            # Note: old calling sequence for back-compat with python <2.6
+            self._command(name, callback=self._command_completer, cb_arg=kw, cb_self=True, *args)
             return (None, None)
         return self._command_complete(self._command(name, *args), kw)
 
