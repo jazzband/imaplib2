@@ -17,9 +17,9 @@ Public functions: Internaldate2Time
 __all__ = ("IMAP4", "IMAP4_SSL", "IMAP4_stream",
            "Internaldate2Time", "ParseFlags", "Time2Internaldate")
 
-__version__ = "2.31"
+__version__ = "2.32"
 __release__ = "2"
-__revision__ = "31"
+__revision__ = "32"
 __credits__ = """
 Authentication code contributed by Donn Cave <donn@u.washington.edu> June 1998.
 String method conversion by ESR, February 2001.
@@ -1750,8 +1750,9 @@ class IMAP4(object):
                         if rxzero > 5:
                             raise IOError("Too many read 0")
                         time.sleep(0.1)
-                    else:
-                        rxzero = 0
+                        continue                                # Try again
+                    rxzero = 0
+
                     while True:
                         stop = data.find('\n', start)
                         if stop < 0:
@@ -1816,8 +1817,9 @@ class IMAP4(object):
                     if rxzero > 5:
                         raise IOError("Too many read 0")
                     time.sleep(0.1)
-                else:
-                    rxzero = 0
+                    continue                                    # Try again
+                rxzero = 0
+
                 while True:
                     stop = data.find('\n', start)
                     if stop < 0:
