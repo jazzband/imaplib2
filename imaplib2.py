@@ -17,9 +17,9 @@ Public functions: Internaldate2Time
 __all__ = ("IMAP4", "IMAP4_SSL", "IMAP4_stream",
            "Internaldate2Time", "ParseFlags", "Time2Internaldate")
 
-__version__ = "2.32"
+__version__ = "2.33"
 __release__ = "2"
-__revision__ = "32"
+__revision__ = "33"
 __credits__ = """
 Authentication code contributed by Donn Cave <donn@u.washington.edu> June 1998.
 String method conversion by ESR, February 2001.
@@ -1230,9 +1230,10 @@ class IMAP4(object):
 
 
     def _choose_nonull_or_dflt(self, dflt, *args):
-        dflttyp = type(dflt)
-        if isinstance(dflttyp, basestring):
+        if isinstance(dflt, basestring):
             dflttyp = basestring            # Allow any string type
+        else:
+            dflttyp = type(dflt)
         for arg in args:
             if arg is not None:
                  if isinstance(arg, dflttyp):
