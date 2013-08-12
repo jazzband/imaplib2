@@ -17,9 +17,9 @@ Public functions: Internaldate2Time
 __all__ = ("IMAP4", "IMAP4_SSL", "IMAP4_stream",
            "Internaldate2Time", "ParseFlags", "Time2Internaldate")
 
-__version__ = "2.33"
+__version__ = "2.34"
 __release__ = "2"
-__revision__ = "33"
+__revision__ = "34"
 __credits__ = """
 Authentication code contributed by Donn Cave <donn@u.washington.edu> June 1998.
 String method conversion by ESR, February 2001.
@@ -39,7 +39,8 @@ Timeout handling further improved by Ethan Glasser-Camp <glasse@cs.rpi.edu> Dece
 Time2Internaldate() patch to match RFC2060 specification of English month names from bugs.python.org/issue11024 March 2011.
 starttls() bug fixed with the help of Sebastian Spaeth <sebastian@sspaeth.de> April 2011.
 Threads now set the "daemon" flag (suggested by offlineimap-project) April 2011.
-Single quoting introduced with the help of Vladimir Marek <vladimir.marek@oracle.com> August 2011."""
+Single quoting introduced with the help of Vladimir Marek <vladimir.marek@oracle.com> August 2011.
+Fix for gmail "read 0" error provided by Jim Greenleaf <james.a.greenleaf@gmail.com> August 2013."""
 __author__ = "Piers Lauder <piers@janeelix.com>"
 __URL__ = "http://imaplib2.sourceforge.net"
 __license__ = "Python License"
@@ -1357,8 +1358,8 @@ class IMAP4(object):
 
         # Called for non-callback commands
 
-        typ, dat = rqb.get_response('command: %s => %%s' % rqb.name)
         self._check_bye()
+        typ, dat = rqb.get_response('command: %s => %%s' % rqb.name)
         if typ == 'BAD':
             if __debug__: self._print_log()
             raise self.error('%s command error: %s %s. Data: %.100s' % (rqb.name, typ, dat, rqb.data))
@@ -1884,11 +1885,12 @@ class IMAP4(object):
     if __debug__:
 
         def _init_debug(self, debug=None, debug_file=None, debug_buf_lvl=None):
+            self.debug_lock = threading.Lock()
+
             self.debug = self._choose_nonull_or_dflt(0, debug, Debug)
             self.debug_file = self._choose_nonull_or_dflt(sys.stderr, debug_file)
             self.debug_buf_lvl = self._choose_nonull_or_dflt(DFLT_DEBUG_BUF_LVL, debug_buf_lvl)
 
-            self.debug_lock = threading.Lock()
             self._cmd_log_len = 20
             self._cmd_log_idx = 0
             self._cmd_log = {}           # Last `_cmd_log_len' interactions
@@ -2090,6 +2092,7 @@ class IMAP4_stream(IMAP4):
 
         from subprocess import Popen, PIPE
 
+        if __debug__: self._log(0, 'opening stream from command "%s"' % self.command)
         self._P = Popen(self.command, shell=True, stdin=PIPE, stdout=PIPE, close_fds=True)
         self.writefile, self.readfile = self._P.stdin, self._P.stdout
         self.read_fd = self.readfile.fileno()
@@ -2292,19 +2295,22 @@ if __name__ == '__main__':
     # To test: invoke either as 'python imaplib2.py [IMAP4_server_hostname]',
     # or as 'python imaplib2.py -s "rsh IMAP4_server_hostname exec /etc/rimapd"'
     # or as 'python imaplib2.py -l "keyfile[:certfile]" [IMAP4_SSL_server_hostname]'
+    # Option "-i" tests that IDLE is interruptible
 
     import getopt, getpass
 
     try:
-        optlist, args = getopt.getopt(sys.argv[1:], 'd:l:s:p:')
+        optlist, args = getopt.getopt(sys.argv[1:], 'd:il:s:p:')
     except getopt.error, val:
         optlist, args = (), ()
 
-    debug, debug_buf_lvl, port, stream_command, keyfile, certfile = (None,)*6
+    debug, debug_buf_lvl, port, stream_command, keyfile, certfile, idle_intr = (None,)*7
     for opt,val in optlist:
         if opt == '-d':
             debug = int(val)
             debug_buf_lvl = debug - 1
+        elif opt == '-i':
+            idle_intr = 1
         elif opt == '-l':
             try:
                 keyfile,certfile = val.split(':')
@@ -2455,6 +2461,16 @@ if __name__ == '__main__':
             M._mesg('fetch %s => %s' % (num, `dat`))
             run('uid', ('STORE', num, 'FLAGS', '(\Deleted)'))
             run('expunge', ())
+            if idle_intr:
+                M._mesg('HIT CTRL-C to interrupt IDLE')
+                try:
+                    run('idle', (99,), cb=False) # Synchronous, to test interruption of 'idle' by INTR
+                except KeyboardInterrupt:
+                    M._mesg('Thanks!')
+                    M._mesg('')
+                    raise
+        elif idle_intr:
+            M._mesg('chosen server does not report IDLE capability')
 
         run('logout', (), cb=False)
 
@@ -2468,12 +2484,13 @@ if __name__ == '__main__':
         print 'All tests OK.'
 
     except:
-        print 'Tests failed.'
+        if not idle_intr or not 'IDLE' in M.capabilities:
+            print 'Tests failed.'
 
-        if not debug:
-            print '''
+            if not debug:
+                print '''
 If you would like to see debugging output,
 try: %s -d5
 ''' % sys.argv[0]
 
-        raise
+            raise
