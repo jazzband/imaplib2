@@ -17,9 +17,9 @@ Public functions: Internaldate2Time
 __all__ = ("IMAP4", "IMAP4_SSL", "IMAP4_stream",
            "Internaldate2Time", "ParseFlags", "Time2Internaldate")
 
-__version__ = "2.34"
+__version__ = "2.35"
 __release__ = "2"
-__revision__ = "34"
+__revision__ = "35"
 __credits__ = """
 Authentication code contributed by Donn Cave <donn@u.washington.edu> June 1998.
 String method conversion by ESR, February 2001.
@@ -40,7 +40,8 @@ Time2Internaldate() patch to match RFC2060 specification of English month names 
 starttls() bug fixed with the help of Sebastian Spaeth <sebastian@sspaeth.de> April 2011.
 Threads now set the "daemon" flag (suggested by offlineimap-project) April 2011.
 Single quoting introduced with the help of Vladimir Marek <vladimir.marek@oracle.com> August 2011.
-Fix for gmail "read 0" error provided by Jim Greenleaf <james.a.greenleaf@gmail.com> August 2013."""
+Fix for gmail "read 0" error provided by Jim Greenleaf <james.a.greenleaf@gmail.com> August 2013.
+Fix for offlineimap "indexerror: string index out of range" bug provided by Eygene Ryabinkin <rea@codelabs.ru> August 2013."""
 __author__ = "Piers Lauder <piers@janeelix.com>"
 __URL__ = "http://imaplib2.sourceforge.net"
 __license__ = "Python License"
@@ -299,7 +300,8 @@ class IMAP4(object):
         self.idle_rqb = None            # Server IDLE Request - see _IdleCont
         self.idle_timeout = None        # Must prod server occasionally
 
-        self._expecting_data = 0        # Expecting message data
+        self._expecting_data = False    # Expecting message data
+        self._expecting_data_len = 0    # How many characters we expect
         self._accumulated_data = []     # Message data accumulated so far
         self._literal_expected = None   # Message data descriptor
 
@@ -1449,10 +1451,11 @@ class IMAP4(object):
 
     def _put_response(self, resp):
 
-        if self._expecting_data > 0:
+        if self._expecting_data:
             rlen = len(resp)
-            dlen = min(self._expecting_data, rlen)
-            self._expecting_data -= dlen
+            dlen = min(self._expecting_data_len, rlen)
+            self._expecting_data_len -= dlen
+            self._expecting_data = (self._expecting_data_len != 0)
             if rlen <= dlen:
                 self._accumulated_data.append(resp)
                 return
@@ -1476,8 +1479,9 @@ class IMAP4(object):
             dat = resp
             if self._match(self.literal_cre, dat):
                 self._literal_expected[1] = dat
-                self._expecting_data = int(self.mo.group('size'))
-                if __debug__: self._log(4, 'expecting literal size %s' % self._expecting_data)
+                self._expecting_data = True
+                self._expecting_data_len = int(self.mo.group('size'))
+                if __debug__: self._log(4, 'expecting literal size %s' % self._expecting_data_len)
                 return
             typ = self._literal_expected[0]
             self._literal_expected = None
@@ -1523,8 +1527,9 @@ class IMAP4(object):
                 # Is there a literal to come?
 
                 if self._match(self.literal_cre, dat):
-                    self._expecting_data = int(self.mo.group('size'))
-                    if __debug__: self._log(4, 'read literal size %s' % self._expecting_data)
+                    self._expecting_data = True
+                    self._expecting_data_len = int(self.mo.group('size'))
+                    if __debug__: self._log(4, 'read literal size %s' % self._expecting_data_len)
                     self._literal_expected = [typ, dat]
                     return
 
