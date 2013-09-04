@@ -391,7 +391,7 @@ so other responses should be obtained by calling <code>response('FLAGS')</code> 
 <DD><small>IMAP4</small>rev1 extension <small>SORT</small> command.</DD>
 
 <br>
-<DT><code>starttls</code>(<I>keyfile</I>, <I>certfile</I>, <I>ca_certs</I>, <I>cert_verify_cb</I>)</DT>
+<DT><code>starttls</code>(<I>keyfile</I>, <I>certfile</I>, <I>ca_certs</I>, <I>cert_verify_cb</I>, <I>ssl_version</I>)</DT>
 <DD>Start TLS negotiation as per RFC 2595.
 If non-null, <I>cert_verify_cb</I> will be called to verify the server certificate,
 with peer certificate and hostname as parameters.

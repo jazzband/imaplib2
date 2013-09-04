@@ -17,9 +17,9 @@ Public functions: Internaldate2Time
 __all__ = ("IMAP4", "IMAP4_SSL", "IMAP4_stream",
            "Internaldate2Time", "ParseFlags", "Time2Internaldate")
 
-__version__ = "2.35"
+__version__ = "2.36"
 __release__ = "2"
-__revision__ = "35"
+__revision__ = "36"
 __credits__ = """
 Authentication code contributed by Donn Cave <donn@u.washington.edu> June 1998.
 String method conversion by ESR, February 2001.
@@ -40,6 +40,7 @@ Time2Internaldate() patch to match RFC2060 specification of English month names 
 starttls() bug fixed with the help of Sebastian Spaeth <sebastian@sspaeth.de> April 2011.
 Threads now set the "daemon" flag (suggested by offlineimap-project) April 2011.
 Single quoting introduced with the help of Vladimir Marek <vladimir.marek@oracle.com> August 2011.
+Support for specifying SSL version by Ryan Kavanagh <rak@debian.org> July 2013.
 Fix for gmail "read 0" error provided by Jim Greenleaf <james.a.greenleaf@gmail.com> August 2013.
 Fix for offlineimap "indexerror: string index out of range" bug provided by Eygene Ryabinkin <rea@codelabs.ru> August 2013."""
 __author__ = "Piers Lauder <piers@janeelix.com>"
@@ -463,7 +464,19 @@ class IMAP4(object):
                 cert_reqs = ssl.CERT_REQUIRED
             else:
                 cert_reqs = ssl.CERT_NONE
-            self.sock = ssl.wrap_socket(self.sock, self.keyfile, self.certfile, ca_certs=self.ca_certs, cert_reqs=cert_reqs)
+
+            if self.ssl_version == "tls1":
+                ssl_version = ssl.PROTOCOL_TLSv1
+            elif self.ssl_version == "ssl2":
+                ssl_version = ssl.PROTOCOL_SSLv2
+            elif self.ssl_version == "ssl3":
+                ssl_version = ssl.PROTOCOL_SSLv3
+            elif self.ssl_version == "ssl23" or self.ssl_version is None:
+                ssl_version = ssl.PROTOCOL_SSLv23
+            else:
+                raise socket.sslerror("Invalid SSL version requested: %s", self.ssl_version)
+
+            self.sock = ssl.wrap_socket(self.sock, self.keyfile, self.certfile, ca_certs=self.ca_certs, cert_reqs=cert_reqs, ssl_version=ssl_version)
             ssl_exc = ssl.SSLError
             self.read_fd = self.sock.fileno()
         except ImportError:
@@ -1043,8 +1056,8 @@ class IMAP4(object):
         return self._simple_command(name, sort_criteria, charset, *search_criteria, **kw)
 
 
-    def starttls(self, keyfile=None, certfile=None, ca_certs=None, cert_verify_cb=None, **kw):
-        """(typ, [data]) = starttls(keyfile=None, certfile=None, ca_certs=None, cert_verify_cb=None)
+    def starttls(self, keyfile=None, certfile=None, ca_certs=None, cert_verify_cb=None, ssl_version="ssl23", **kw):
+        """(typ, [data]) = starttls(keyfile=None, certfile=None, ca_certs=None, cert_verify_cb=None, ssl_version="ssl23")
         Start TLS negotiation as per RFC 2595."""
 
         name = 'STARTTLS'
@@ -1079,6 +1092,7 @@ class IMAP4(object):
         self.certfile = certfile
         self.ca_certs = ca_certs
         self.cert_verify_cb = cert_verify_cb
+        self.ssl_version = ssl_version
 
         try:
             self.ssl_wrap_socket()
@@ -1979,7 +1993,7 @@ class IMAP4_SSL(IMAP4):
     """IMAP4 client class over SSL connection
 
     Instantiate with:
-        IMAP4_SSL(host=None, port=None, keyfile=None, certfile=None, debug=None, debug_file=None, identifier=None, timeout=None)
+        IMAP4_SSL(host=None, port=None, keyfile=None, certfile=None, ca_certs=None, cert_verify_cb=None, ssl_version="ssl23", debug=None, debug_file=None, identifier=None, timeout=None)
 
         host           - host's name (default: localhost);
         port           - port number (default: standard IMAP4 SSL port);
@@ -1987,6 +2001,7 @@ class IMAP4_SSL(IMAP4):
         certfile       - PEM formatted certificate chain file (default: None);
         ca_certs       - PEM formatted certificate chain file used to validate server certificates (default: None);
         cert_verify_cb - function to verify authenticity of server certificates (default: None);
+        ssl_version    - SSL version to use (default: "ssl23", choose from: "tls1","ssl2","ssl3","ssl23");
         debug          - debug level (default: 0 - no debug);
         debug_file     - debug stream (default: sys.stderr);
         identifier     - thread identifier prefix (default: host);
@@ -1997,11 +2012,12 @@ class IMAP4_SSL(IMAP4):
     """
 
 
-    def __init__(self, host=None, port=None, keyfile=None, certfile=None, ca_certs=None, cert_verify_cb=None, debug=None, debug_file=None, identifier=None, timeout=None, debug_buf_lvl=None):
+    def __init__(self, host=None, port=None, keyfile=None, certfile=None, ca_certs=None, cert_verify_cb=None, ssl_version="ssl23", debug=None, debug_file=None, identifier=None, timeout=None, debug_buf_lvl=None):
         self.keyfile = keyfile
         self.certfile = certfile
         self.ca_certs = ca_certs
         self.cert_verify_cb = cert_verify_cb
+        self.ssl_version = ssl_version
         IMAP4.__init__(self, host, port, debug, debug_file, identifier, timeout, debug_buf_lvl)
 
 
