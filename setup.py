@@ -4,9 +4,13 @@ from setuptools import setup, find_packages
 
 setup(
     name="imaplib2",
-    version="2.28.1",
+    version="2.28.2",
     description="A threaded Python IMAP4 client.",
     author="Piers Lauder",
     url="http://github.com/bcoe/imaplib2",
+    classifiers = [
+        "Programming Language :: Python :: 2",
+        "Programming Language :: Python :: 2.7"
+    ],
     packages = find_packages()
 )
