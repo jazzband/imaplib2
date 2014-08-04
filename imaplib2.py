@@ -1663,16 +1663,20 @@ class IMAP4(object):
         typ, val = self.abort, 'connection terminated'
 
         while not self.Terminate:
+
+            self.idle_lock.acquire()
+            if self.idle_timeout is not None:
+                timeout = self.idle_timeout - time.time()
+                if timeout <= 0:
+                    timeout = 1
+                if __debug__:
+                    if self.idle_rqb is not None:
+                        self._log(5, 'server IDLING, timeout=%.2f' % timeout)
+            else:
+                timeout = resp_timeout
+            self.idle_lock.release()
+
             try:
-                if self.idle_timeout is not None:
-                    timeout = self.idle_timeout - time.time()
-                    if timeout <= 0:
-                        timeout = 1
-                    if __debug__:
-                        if self.idle_rqb is not None:
-                            self._log(5, 'server IDLING, timeout=%.2f' % timeout)
-                else:
-                    timeout = resp_timeout
                 line = self.inq.get(True, timeout)
             except Queue.Empty:
                 if self.idle_rqb is None:
