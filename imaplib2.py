@@ -17,9 +17,9 @@ Public functions: Internaldate2Time
 __all__ = ("IMAP4", "IMAP4_SSL", "IMAP4_stream",
            "Internaldate2Time", "ParseFlags", "Time2Internaldate")
 
-__version__ = "2.36"
+__version__ = "2.37"
 __release__ = "2"
-__revision__ = "36"
+__revision__ = "37"
 __credits__ = """
 Authentication code contributed by Donn Cave <donn@u.washington.edu> June 1998.
 String method conversion by ESR, February 2001.
@@ -42,7 +42,8 @@ Threads now set the "daemon" flag (suggested by offlineimap-project) April 2011.
 Single quoting introduced with the help of Vladimir Marek <vladimir.marek@oracle.com> August 2011.
 Support for specifying SSL version by Ryan Kavanagh <rak@debian.org> July 2013.
 Fix for gmail "read 0" error provided by Jim Greenleaf <james.a.greenleaf@gmail.com> August 2013.
-Fix for offlineimap "indexerror: string index out of range" bug provided by Eygene Ryabinkin <rea@codelabs.ru> August 2013."""
+Fix for offlineimap "indexerror: string index out of range" bug provided by Eygene Ryabinkin <rea@codelabs.ru> August 2013.
+Fix for missing idle_lock in _handler() provided by Franklin Brook <franklin@brook.se> August 2014"""
 __author__ = "Piers Lauder <piers@janeelix.com>"
 __URL__ = "http://imaplib2.sourceforge.net"
 __license__ = "Python License"
