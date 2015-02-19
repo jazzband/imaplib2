@@ -2191,7 +2191,7 @@ class IMAP4_stream(IMAP4):
 
         if bytes != str:
             self.writefile.write(bytes(data, 'utf8'))
-	else:
+        else:
             self.writefile.write(data)
         self.writefile.flush()
 
