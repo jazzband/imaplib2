@@ -9,7 +9,7 @@ except ImportError:
 
 setup(
     name="imaplib2",
-    version="2.37.4",
+    version="2.38.0",
     description="A threaded Python IMAP4 client.",
     author="Piers Lauder",
     url="http://github.com/bcoe/imaplib2",
