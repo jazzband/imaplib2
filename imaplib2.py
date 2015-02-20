@@ -1725,7 +1725,9 @@ class IMAP4(object):
 
         while not self.ouq.empty():
             try:
-                self.ouq.get_nowait().abort(typ, val)
+                qel = self.ouq.get_nowait()
+                if qel is not None:
+                    qel.abort(typ, val)
             except queue.Empty:
                 break
         self.ouq.put(None)
