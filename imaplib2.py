@@ -17,9 +17,9 @@ Public functions: Internaldate2Time
 __all__ = ("IMAP4", "IMAP4_SSL", "IMAP4_stream",
            "Internaldate2Time", "ParseFlags", "Time2Internaldate")
 
-__version__ = "2.39"
+__version__ = "2.40"
 __release__ = "2"
-__revision__ = "39"
+__revision__ = "40"
 __credits__ = """
 Authentication code contributed by Donn Cave <donn@u.washington.edu> June 1998.
 String method conversion by ESR, February 2001.
@@ -44,7 +44,8 @@ Support for specifying SSL version by Ryan Kavanagh <rak@debian.org> July 2013.
 Fix for gmail "read 0" error provided by Jim Greenleaf <james.a.greenleaf@gmail.com> August 2013.
 Fix for offlineimap "indexerror: string index out of range" bug provided by Eygene Ryabinkin <rea@codelabs.ru> August 2013.
 Fix for missing idle_lock in _handler() provided by Franklin Brook <franklin@brook.se> August 2014.
-Conversion to Python3 provided by F. Malina <fmalina@gmail.com> February 2015"""
+Conversion to Python3 provided by F. Malina <fmalina@gmail.com> February 2015.
+Fix for READ-ONLY error from multiple EXAMINE/SELECT calls for same mailbox by <piloub@users.sf.net> March 2015."""
 __author__ = "Piers Lauder <piers@janeelix.com>"
 __URL__ = "http://imaplib2.sourceforge.net"
 __license__ = "Python License"
@@ -261,7 +262,7 @@ class IMAP4(object):
     containing the wildcard character '*', then enclose the argument
     in single quotes: the quotes will be removed and the resulting
     string passed unquoted. Note also that you can pass in an argument
-    with a type that doesn't evaluate to 'basestring' (eg: 'bytearray')
+    with a type that doesn't evaluate to 'string_types' (eg: 'bytearray')
     and it will be converted to a string without quoting.
 
     There is one instance variable, 'state', that is useful for tracking
@@ -1001,9 +1002,11 @@ class IMAP4(object):
         self.untagged_responses = self.mailboxes.setdefault(mailbox, [])
         self.commands_lock.release()
 
+        self._get_untagged_response('READ-ONLY')
+
         self.mailbox = mailbox
 
-        self.is_readonly = readonly and True or False
+        self.is_readonly = bool(readonly)
         if readonly:
             name = 'EXAMINE'
         else:
@@ -2193,7 +2196,7 @@ class IMAP4_stream(IMAP4):
 
         if bytes != str:
             self.writefile.write(bytes(data, 'utf8'))
-	else:
+        else:
             self.writefile.write(data)
         self.writefile.flush()
 
@@ -2435,6 +2438,10 @@ if __name__ == '__main__':
     ('uid', ('SEARCH', 'ALL')),
     ('uid', ('THREAD', 'references', 'UTF-8', '(SEEN)')),
     ('recent', ()),
+    ('examine', ()),
+    ('select', ()),
+    ('examine', ()),
+    ('select', ()),
     )
 
 
