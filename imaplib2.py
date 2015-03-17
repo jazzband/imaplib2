@@ -17,9 +17,9 @@ Public functions: Internaldate2Time
 __all__ = ("IMAP4", "IMAP4_SSL", "IMAP4_stream",
            "Internaldate2Time", "ParseFlags", "Time2Internaldate")
 
-__version__ = "2.40"
+__version__ = "2.41"
 __release__ = "2"
-__revision__ = "40"
+__revision__ = "41"
 __credits__ = """
 Authentication code contributed by Donn Cave <donn@u.washington.edu> June 1998.
 String method conversion by ESR, February 2001.
@@ -307,7 +307,6 @@ class IMAP4(object):
         self.tagged_commands = {}       # Tagged commands awaiting response
         self.untagged_responses = []    # [[typ: [data, ...]], ...]
         self.mailbox = None             # Current mailbox selected
-        self.mailboxes = {}             # Untagged responses state per mailbox
         self.is_readonly = False        # READ-ONLY desired state
         self.idle_rqb = None            # Server IDLE Request - see _IdleCont
         self.idle_timeout = None        # Must prod server occasionally
@@ -991,18 +990,10 @@ class IMAP4(object):
 
     def select(self, mailbox='INBOX', readonly=False, **kw):
         """(typ, [data]) = select(mailbox='INBOX', readonly=False)
-        Select a mailbox. (Restores any previous untagged responses.)
+        Select a mailbox. (Flushes all untagged responses.)
         'data' is count of messages in mailbox ('EXISTS' response).
         Mandated responses are ('FLAGS', 'EXISTS', 'RECENT', 'UIDVALIDITY'), so
         other responses should be obtained via "response('FLAGS')" etc."""
-
-        self.commands_lock.acquire()
-        # Save state of old mailbox, restore state for new...
-        self.mailboxes[self.mailbox] = self.untagged_responses
-        self.untagged_responses = self.mailboxes.setdefault(mailbox, [])
-        self.commands_lock.release()
-
-        self._get_untagged_response('READ-ONLY')
 
         self.mailbox = mailbox
 
@@ -1315,12 +1306,16 @@ class IMAP4(object):
 
         self._check_bye()
 
-        for typ in ('OK', 'NO', 'BAD'):
-            self._get_untagged_response(typ)
+        if name in ('EXAMINE', 'SELECT'):
+            self.untagged_responses = []      # Flush all untagged responses
+        else:
+            for typ in ('OK', 'NO', 'BAD'):
+                while self._get_untagged_response(typ):
+                    continue
 
-        if self._get_untagged_response('READ-ONLY', leave=True) and not self.is_readonly:
-            self.literal = None
-            raise self.readonly('mailbox status changed to READ-ONLY')
+            if self._get_untagged_response('READ-ONLY', leave=True) and not self.is_readonly:
+                self.literal = None
+                raise self.readonly('mailbox status changed to READ-ONLY')
 
         if self.Terminate:
             raise self.abort('connection closed')
