@@ -2,11 +2,6 @@
 # from distutils.core import setup
 from setuptools import setup, find_packages
 
-try:
-    from distutils.command.build_py import build_py_2to3 as build_py
-except ImportError:
-    from distutils.command.build_py import build_py
-
 setup(
     name="imaplib2",
     version="2.38.0",
@@ -19,5 +14,4 @@ setup(
         "Programming Language :: Python :: 3"
     ],
     packages=find_packages(),
-    cmdclass={'build_py': build_py}
 )
