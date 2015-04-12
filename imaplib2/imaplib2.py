@@ -17,9 +17,9 @@ Public functions: Internaldate2Time
 __all__ = ("IMAP4", "IMAP4_SSL", "IMAP4_stream",
            "Internaldate2Time", "ParseFlags", "Time2Internaldate")
 
-__version__ = "2.38"
+__version__ = "2.43"
 __release__ = "2"
-__revision__ = "38"
+__revision__ = "43"
 __credits__ = """
 Authentication code contributed by Donn Cave <donn@u.washington.edu> June 1998.
 String method conversion by ESR, February 2001.
@@ -44,7 +44,9 @@ Support for specifying SSL version by Ryan Kavanagh <rak@debian.org> July 2013.
 Fix for gmail "read 0" error provided by Jim Greenleaf <james.a.greenleaf@gmail.com> August 2013.
 Fix for offlineimap "indexerror: string index out of range" bug provided by Eygene Ryabinkin <rea@codelabs.ru> August 2013.
 Fix for missing idle_lock in _handler() provided by Franklin Brook <franklin@brook.se> August 2014.
-Conversion to Python3 provided by F. Malina <fmalina@gmail.com> February 2015"""
+Conversion to Python3 provided by F. Malina <fmalina@gmail.com> February 2015.
+Fix for READ-ONLY error from multiple EXAMINE/SELECT calls by Pierre-Louis Bonicoli <pierre-louis.bonicoli@gmx.fr> March 2015.
+Fix for null strings appended to untagged responses by Pierre-Louis Bonicoli <pierre-louis.bonicoli@gmx.fr> March 2015."""
 __author__ = "Piers Lauder <piers@janeelix.com>"
 __URL__ = "http://imaplib2.sourceforge.net"
 __license__ = "Python License"
@@ -261,7 +263,7 @@ class IMAP4(object):
     containing the wildcard character '*', then enclose the argument
     in single quotes: the quotes will be removed and the resulting
     string passed unquoted. Note also that you can pass in an argument
-    with a type that doesn't evaluate to 'basestring' (eg: 'bytearray')
+    with a type that doesn't evaluate to 'string_types' (eg: 'bytearray')
     and it will be converted to a string without quoting.
 
     There is one instance variable, 'state', that is useful for tracking
@@ -306,7 +308,6 @@ class IMAP4(object):
         self.tagged_commands = {}       # Tagged commands awaiting response
         self.untagged_responses = []    # [[typ: [data, ...]], ...]
         self.mailbox = None             # Current mailbox selected
-        self.mailboxes = {}             # Untagged responses state per mailbox
         self.is_readonly = False        # READ-ONLY desired state
         self.idle_rqb = None            # Server IDLE Request - see _IdleCont
         self.idle_timeout = None        # Must prod server occasionally
@@ -990,20 +991,14 @@ class IMAP4(object):
 
     def select(self, mailbox='INBOX', readonly=False, **kw):
         """(typ, [data]) = select(mailbox='INBOX', readonly=False)
-        Select a mailbox. (Restores any previous untagged responses.)
+        Select a mailbox. (Flushes all untagged responses.)
         'data' is count of messages in mailbox ('EXISTS' response).
         Mandated responses are ('FLAGS', 'EXISTS', 'RECENT', 'UIDVALIDITY'), so
         other responses should be obtained via "response('FLAGS')" etc."""
 
-        self.commands_lock.acquire()
-        # Save state of old mailbox, restore state for new...
-        self.mailboxes[self.mailbox] = self.untagged_responses
-        self.untagged_responses = self.mailboxes.setdefault(mailbox, [])
-        self.commands_lock.release()
-
         self.mailbox = mailbox
 
-        self.is_readonly = readonly and True or False
+        self.is_readonly = bool(readonly)
         if readonly:
             name = 'EXAMINE'
         else:
@@ -1312,12 +1307,18 @@ class IMAP4(object):
 
         self._check_bye()
 
-        for typ in ('OK', 'NO', 'BAD'):
-            self._get_untagged_response(typ)
+        if name in ('EXAMINE', 'SELECT'):
+            self.commands_lock.acquire()
+            self.untagged_responses = []      # Flush all untagged responses
+            self.commands_lock.release()
+        else:
+            for typ in ('OK', 'NO', 'BAD'):
+                while self._get_untagged_response(typ):
+                    continue
 
-        if self._get_untagged_response('READ-ONLY', leave=True) and not self.is_readonly:
-            self.literal = None
-            raise self.readonly('mailbox status changed to READ-ONLY')
+            if self._get_untagged_response('READ-ONLY', leave=True) and not self.is_readonly:
+                self.literal = None
+                raise self.readonly('mailbox status changed to READ-ONLY')
 
         if self.Terminate:
             raise self.abort('connection closed')
@@ -1346,7 +1347,7 @@ class IMAP4(object):
             self.ouq.put(rqb)
             return rqb
 
-        # Must setup continuation expectancy *before* ouq.put
+        # Must setup continuation expectancy *before* ouq.put 
         crqb = self._request_push(tag='continuation')
 
         self.ouq.put(rqb)
@@ -1483,6 +1484,7 @@ class IMAP4(object):
         if self._expecting_data:
             rlen = len(resp)
             dlen = min(self._expecting_data_len, rlen)
+            if __debug__: self._log(5, '_put_response expecting data len %s, got %s' % (self._expecting_data_len, rlen))
             self._expecting_data_len -= dlen
             self._expecting_data = (self._expecting_data_len != 0)
             if rlen <= dlen:
@@ -1498,6 +1500,7 @@ class IMAP4(object):
 
         # Protocol mandates all lines terminated by CRLF
         resp = resp[:-2]
+        if __debug__: self._log(5, '_put_response(%s)' % resp)
 
         if 'continuation' in self.tagged_commands:
             continuation_expected = True
@@ -1514,7 +1517,8 @@ class IMAP4(object):
                 return
             typ = self._literal_expected[0]
             self._literal_expected = None
-            self._append_untagged(typ, dat)  # Tail
+            if dat:
+                self._append_untagged(typ, dat)  # Tail
             if __debug__: self._log(4, 'literal completed')
         else:
             # Command completion response?
@@ -1522,6 +1526,8 @@ class IMAP4(object):
                 tag = self.mo.group('tag')
                 typ = self.mo.group('type')
                 dat = self.mo.group('data')
+                if typ in ('OK', 'NO', 'BAD') and self._match(self.response_code_cre, dat):
+                    self._append_untagged(self.mo.group('type'), self.mo.group('data'))
                 if not tag in self.tagged_commands:
                     if __debug__: self._log(1, 'unexpected tagged response: %s' % resp)
                 else:
@@ -1563,14 +1569,11 @@ class IMAP4(object):
                     return
 
                 self._append_untagged(typ, dat)
+                if typ in ('OK', 'NO', 'BAD') and self._match(self.response_code_cre, dat):
+                    self._append_untagged(self.mo.group('type'), self.mo.group('data'))
 
                 if typ != 'OK':                 # NO, BYE, IDLE
                     self._end_idle()
-
-        # Bracketed response information?
-
-        if typ in ('OK', 'NO', 'BAD') and self._match(self.response_code_cre, dat):
-            self._append_untagged(self.mo.group('type'), self.mo.group('data'))
 
         # Command waiting for aborted continuation response?
 
@@ -1725,7 +1728,9 @@ class IMAP4(object):
 
         while not self.ouq.empty():
             try:
-                self.ouq.get_nowait().abort(typ, val)
+                qel = self.ouq.get_nowait()
+                if qel is not None:
+                    qel.abort(typ, val)
             except queue.Empty:
                 break
         self.ouq.put(None)
@@ -2429,6 +2434,11 @@ if __name__ == '__main__':
     ('response', ('UIDVALIDITY',)),
     ('response', ('EXISTS',)),
     ('append', (None, None, None, test_mesg)),
+    ('examine', ()),
+    ('select', ()),
+    ('fetch', ("'1:*'", '(FLAGS UID)')),
+    ('examine', ()),
+    ('select', ()),
     ('uid', ('SEARCH', 'SUBJECT', 'IMAP4 test')),
     ('uid', ('SEARCH', 'ALL')),
     ('uid', ('THREAD', 'references', 'UTF-8', '(SEEN)')),
@@ -2453,7 +2463,7 @@ if __name__ == '__main__':
 
     def run(cmd, args, cb=True):
         if AsyncError:
-            M._log(1, 'AsyncError')
+            M._log(1, 'AsyncError %s' % repr(AsyncError))
             M.logout()
             typ, val = AsyncError
             raise typ(val)
@@ -2506,7 +2516,7 @@ if __name__ == '__main__':
             run('id', ())
             run('id', ("(name imaplib2)",))
             run('id', ("version", __version__, "os", os.uname()[0]))
-
+ 
         for cmd,args in test_seq2:
             if (cmd,args) != ('uid', ('SEARCH', 'SUBJECT', 'IMAP4 test')):
                 run(cmd, args)
