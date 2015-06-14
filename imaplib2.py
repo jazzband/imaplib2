@@ -1425,7 +1425,6 @@ class IMAP4(object):
             return
         if __debug__: self._log(4, '_command_completer(%s, %s, None) = %s' % (response, cb_arg, rqb.tag))
         if 'untagged_response' in kw:
-            # **** why is this not a race condition? ***
             response = self._untagged_response(typ, dat, kw['untagged_response'])
         rqb.deliver(response)
 
