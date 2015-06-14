@@ -445,9 +445,10 @@ that is set to the most recent supported protocol in the <small>CAPABILITY</smal
 <p>Here is a minimal example (without error checking) that opens a mailbox
 and retrieves and prints all messages:</p>
 <PRE>
-	def cb((response, cb_arg, error)):
+	def cb(cb_arg_list):
+		response, cb_arg, error = cb_arg_list
 		typ, data = response
-		print 'Message %s\n%s\n' % (cb_arg, data[0][1])
+		print('Message %s\n%s\n' % (cb_arg, data[0][1]))
 
 	import getpass, imaplib2
 	M = imaplib2.IMAP4()
@@ -456,6 +457,7 @@ and retrieves and prints all messages:</p>
 	typ, data = M.SEARCH(None, 'ALL')
 	for num in data[0].split():
 		M.FETCH(num, '(RFC822)', callback=cb, cb_arg=num)
+	M.CLOSE()
 	M.LOGOUT()
 </PRE>
 
