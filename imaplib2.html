@@ -452,11 +452,9 @@ and retrieves and prints all messages:</p>
 			return
 		collected = []
 		for text in data:
-			if text == ')':	# End of a message
-				# First string is envelope description,
-				#  of which first field is message ID.
+			if text[0] == ')':	# Trailer
 				print('Message %s:\n%s\n'
-					% (collected[0].split()[0], '\n'.join(collected[1:])))
+					% (collected[0].split()[0], collected[1]))
 				collected = []
 			else:
 				collected += text
