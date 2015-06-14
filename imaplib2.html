@@ -448,7 +448,18 @@ and retrieves and prints all messages:</p>
 	def cb(cb_arg_list):
 		response, cb_arg, error = cb_arg_list
 		typ, data = response
-		print('Message %s\n%s\n' % (cb_arg, data[0][1]))
+		if not data or not data[0]:
+			return
+		collected = []
+		for text in data:
+			if text == ')':	# End of a message
+				# First string is envelope description,
+				#  of which first field is message ID.
+				print('Message %s:\n%s\n'
+					% (collected[0].split()[0], '\n'.join(collected[1:])))
+				collected = []
+			else:
+				collected += text
 
 	import getpass, imaplib2
 	M = imaplib2.IMAP4()
@@ -456,7 +467,7 @@ and retrieves and prints all messages:</p>
 	M.SELECT(readonly=True)
 	typ, data = M.SEARCH(None, 'ALL')
 	for num in data[0].split():
-		M.FETCH(num, '(RFC822)', callback=cb, cb_arg=num)
+		M.FETCH(num, '(RFC822)', callback=cb)
 	M.CLOSE()
 	M.LOGOUT()
 </PRE>
