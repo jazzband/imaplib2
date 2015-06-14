@@ -1232,7 +1232,7 @@ class IMAP4(object):
 
         self.commands_lock.release()
 
-        if __debug__: self._log(5, 'untagged_responses[%s] %s += ["%s"]' % (typ, len(urd)-1, dat))
+        if __debug__: self._log(5, 'untagged_responses[%s] %s += ["%.80s"]' % (typ, len(urd)-1, dat))
 
 
     def _check_bye(self):
@@ -1319,7 +1319,7 @@ class IMAP4(object):
                 while self._get_untagged_response(typ):
                     continue
 
-            if self._get_untagged_response('READ-ONLY', leave=True) and not self.is_readonly:
+            if not self.is_readonly and self._get_untagged_response('READ-ONLY', leave=True):
                 self.literal = None
                 raise self.readonly('mailbox status changed to READ-ONLY')
 
@@ -1405,7 +1405,7 @@ class IMAP4(object):
     def _command_completer(self, cb_arg_list):
 
         # Called for callback commands
-        (response, cb_arg, error) = cb_arg_list
+        response, cb_arg, error = cb_arg_list
         rqb, kw = cb_arg
         rqb.callback = kw['callback']
         rqb.callback_arg = kw.get('cb_arg')
@@ -1423,7 +1423,9 @@ class IMAP4(object):
             if __debug__: self._print_log()
             rqb.abort(self.error, '%s command error: %s %s. Data: %.100s' % (rqb.name, typ, dat, rqb.data))
             return
+        if __debug__: self._log(4, '_command_completer(%s, %s, None) = %s' % (response, cb_arg, rqb.tag))
         if 'untagged_response' in kw:
+            # **** why is this not a race condition? ***
             response = self._untagged_response(typ, dat, kw['untagged_response'])
         rqb.deliver(response)
 
@@ -1466,7 +1468,7 @@ class IMAP4(object):
                 if not leave:
                     del self.untagged_responses[i]
                 self.commands_lock.release()
-                if __debug__: self._log(5, '_get_untagged_response(%s) => %s' % (name, dat))
+                if __debug__: self._log(5, '_get_untagged_response(%s) => %.80s' % (name, dat))
                 return dat
 
         self.commands_lock.release()
@@ -1608,11 +1610,17 @@ class IMAP4(object):
         self.commands_lock.acquire()
         rqb = self.tagged_commands.pop(name)
         if not self.tagged_commands:
+            need_event = True
+        else:
+            need_event = False
+        self.commands_lock.release()
+
+        if __debug__: self._log(4, '_request_pop(%s, %s) [%d] = %s' % (name, data, len(self.tagged_commands), rqb.tag))
+        rqb.deliver(data)
+
+        if need_event:
             if __debug__: self._log(3, 'state_change_free.set')
             self.state_change_free.set()
-        self.commands_lock.release()
-        if __debug__: self._log(4, '_request_pop(%s, %s) = %s' % (name, data, rqb.tag))
-        rqb.deliver(data)
 
 
     def _request_push(self, tag=None, name=None, **kw):
@@ -1648,7 +1656,7 @@ class IMAP4(object):
             if not dat:
                 break
             data += dat
-        if __debug__: self._log(4, '_untagged_response(%s, ?, %s) => %s' % (typ, name, data))
+        if __debug__: self._log(4, '_untagged_response(%s, ?, %s) => %.80s' % (typ, name, data))
         return typ, data
 
 
@@ -1777,7 +1785,7 @@ class IMAP4(object):
 
         while not (terminate or self.Terminate):
             if self.state == LOGOUT:
-                timeout = 1
+                timeout = 10
             else:
                 timeout = read_poll_timeout
             try:
@@ -1805,11 +1813,11 @@ class IMAP4(object):
                         if bytes != str:
                             stop = data.find(b'\n', start)
                             if stop < 0:
-                                line_part += data[start:].decode()
+                                line_part += data[start:].decode(errors='ignore')
                                 break
                             stop += 1
                             line_part, start, line = \
-                                '', stop, line_part + data[start:stop].decode()
+                                '', stop, line_part + data[start:stop].decode(errors='ignore')
                         else:
                             stop = data.find('\n', start)
                             if stop < 0:
@@ -1881,11 +1889,11 @@ class IMAP4(object):
                     if bytes != str:
                         stop = data.find(b'\n', start)
                         if stop < 0:
-                            line_part += data[start:].decode()
+                            line_part += data[start:].decode(errors='ignore')
                             break
                         stop += 1
                         line_part, start, line = \
-                            '', stop, line_part + data[start:stop].decode()
+                            '', stop, line_part + data[start:stop].decode(errors='ignore')
                     else:
                         stop = data.find('\n', start)
                         if stop < 0:
@@ -2458,7 +2466,7 @@ if __name__ == '__main__':
     AsyncError = None
 
     def responder(cb_arg_list):
-        (response, cb_arg, error) = cb_arg_list
+        response, cb_arg, error = cb_arg_list
         global AsyncError
         cmd, args = cb_arg
         if error is not None:
