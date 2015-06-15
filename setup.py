@@ -7,7 +7,7 @@ setup(
     version="2.45.0",
     description="A threaded Python IMAP4 client.",
     author="Piers Lauder",
-    url="http://github.com/bcoe/imaplib2",
+    url="https://github.com/bcoe/imaplib2",
     classifiers=[
         "Programming Language :: Python :: 2",
         "Programming Language :: Python :: 2.7",
