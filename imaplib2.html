@@ -452,7 +452,9 @@ and retrieves and prints all messages:</p>
 			return
 		collected = []
 		for text in data:
-			if text[0] == ')':	# Trailer
+			if text[-1] == '}':	# End of header
+				collected = [text]
+			elif text[0] == ')' and len(collected) == 2:	# Trailer
 				print('Message %s:\n%s\n'
 					% (collected[0].split()[0], collected[1]))
 				collected = []
