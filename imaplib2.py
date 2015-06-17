@@ -17,9 +17,9 @@ Public functions: Internaldate2Time
 __all__ = ("IMAP4", "IMAP4_SSL", "IMAP4_stream",
            "Internaldate2Time", "ParseFlags", "Time2Internaldate")
 
-__version__ = "2.45"
+__version__ = "2.46"
 __release__ = "2"
-__revision__ = "45"
+__revision__ = "46"
 __credits__ = """
 Authentication code contributed by Donn Cave <donn@u.washington.edu> June 1998.
 String method conversion by ESR, February 2001.
@@ -54,11 +54,13 @@ __license__ = "Python License"
 
 import binascii, errno, os, random, re, select, socket, sys, time, threading, zlib
 
-try:
-    import queue # py3
+if bytes != str:
+    # Python 3, but NB assumes strings in all I/O
+    # for backwards compatibility with python 2 usage.
+    import queue
     string_types = str
-except ImportError:
-    import Queue as queue # py2
+else:
+    import Queue as queue
     string_types = basestring
 
 
@@ -535,9 +537,9 @@ class IMAP4(object):
             data += self.compressor.flush(zlib.Z_SYNC_FLUSH)
 
         if bytes != str:
-            self.sock.sendall(bytes(data, 'utf8'))
-        else:
-            self.sock.sendall(data)
+            data = bytes(data, 'utf8')
+
+        self.sock.sendall(data)
 
 
     def shutdown(self):
@@ -1772,7 +1774,10 @@ class IMAP4(object):
             }
             return ' '.join([PollErrors[s] for s in PollErrors.keys() if (s & state)])
 
-        line_part = ''
+        if bytes != str:
+            line_part = b''
+        else:
+            line_part = ''
 
         poll = select.poll()
 
@@ -1812,11 +1817,11 @@ class IMAP4(object):
                         if bytes != str:
                             stop = data.find(b'\n', start)
                             if stop < 0:
-                                line_part += data[start:].decode(errors='ignore')
+                                line_part += data[start:]
                                 break
                             stop += 1
                             line_part, start, line = \
-                                '', stop, line_part + data[start:stop].decode(errors='ignore')
+                                b'', stop, (line_part + data[start:stop]).decode(errors='ignore')
                         else:
                             stop = data.find('\n', start)
                             if stop < 0:
@@ -1856,7 +1861,10 @@ class IMAP4(object):
 
         if __debug__: self._log(1, 'starting using select')
 
-        line_part = ''
+        if bytes != str:
+            line_part = b''
+        else:
+            line_part = ''
 
         rxzero = 0
         terminate = False
@@ -1888,11 +1896,11 @@ class IMAP4(object):
                     if bytes != str:
                         stop = data.find(b'\n', start)
                         if stop < 0:
-                            line_part += data[start:].decode(errors='ignore')
+                            line_part += data[start:]
                             break
                         stop += 1
                         line_part, start, line = \
-                            '', stop, line_part + data[start:stop].decode(errors='ignore')
+                            b'', stop, (line_part + data[start:stop]).decode(errors='ignore')
                     else:
                         stop = data.find('\n', start)
                         if stop < 0:
@@ -2110,27 +2118,18 @@ class IMAP4_SSL(IMAP4):
             data += self.compressor.flush(zlib.Z_SYNC_FLUSH)
 
         if bytes != str:
-            if hasattr(self.sock, "sendall"):
-                self.sock.sendall(bytes(data, 'utf8'))
-            else:
-                dlen = len(data)
-                while dlen > 0:
-                    sent = self.sock.write(bytes(data, 'utf8'))
-                    if sent == dlen:
-                        break    # avoid copy
-                    data = data[sent:]
-                    dlen = dlen - sent
+            data = bytes(data, 'utf8')
+
+        if hasattr(self.sock, "sendall"):
+            self.sock.sendall(data)
         else:
-            if hasattr(self.sock, "sendall"):
-                self.sock.sendall(data)
-            else:
-                dlen = len(data)
-                while dlen > 0:
-                    sent = self.sock.write(data)
-                    if sent == dlen:
-                        break    # avoid copy
-                    data = data[sent:]
-                    dlen = dlen - sent
+            dlen = len(data)
+            while dlen > 0:
+                sent = self.sock.write(data)
+                if sent == dlen:
+                    break    # avoid copy
+                data = data[sent:]
+                dlen = dlen - sent
 
 
     def ssl(self):
@@ -2205,9 +2204,9 @@ class IMAP4_stream(IMAP4):
             data += self.compressor.flush(zlib.Z_SYNC_FLUSH)
 
         if bytes != str:
-            self.writefile.write(bytes(data, 'utf8'))
-        else:
-            self.writefile.write(data)
+            data = bytes(data, 'utf8')
+
+        self.writefile.write(data)
         self.writefile.flush()
 
 
