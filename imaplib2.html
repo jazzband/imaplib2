@@ -452,14 +452,17 @@ and retrieves and prints all messages:</p>
 			return
 		collected = []
 		for text in data:
-			if text[-1] == '}':	# End of header
+			if type(text) is tuple:		# Header and body
+				collected = text
+			elif text[-1] == '}':		# Header
 				collected = [text]
-			elif text[0] == ')' and len(collected) == 2:	# Trailer
-				print('Message %s:\n%s\n'
-					% (collected[0].split()[0], collected[1]))
-				collected = []
-			else:
+				continue
+			elif text[0] != ')' or len(collected) != 2:
 				collected += text
+				continue
+			print('Message %s:\n%s\n'
+				% (collected[0].split()[0], collected[1]))
+			collected = []
 
 	import getpass, imaplib2
 	M = imaplib2.IMAP4()
