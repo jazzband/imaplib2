@@ -448,21 +448,13 @@ and retrieves and prints all messages:</p>
 	def cb(cb_arg_list):
 		response, cb_arg, error = cb_arg_list
 		typ, data = response
-		if not data or not data[0]:
+		if not data:
 			return
-		collected = []
-		for text in data:
-			if type(text) is tuple:		# Header and body
-				collected = text
-			elif text[-1] == '}':		# Header
-				collected = [text]
-				continue
-			elif text[0] != ')' or len(collected) != 2:
-				collected += text
+		for field in data:
+			if type(field) is not tuple:
 				continue
 			print('Message %s:\n%s\n'
-				% (collected[0].split()[0], collected[1]))
-			collected = []
+				% (field[0].split()[0], field[1]))
 
 	import getpass, imaplib2
 	M = imaplib2.IMAP4()
