@@ -17,9 +17,9 @@ Public functions: Internaldate2Time
 __all__ = ("IMAP4", "IMAP4_SSL", "IMAP4_stream",
            "Internaldate2Time", "ParseFlags", "Time2Internaldate")
 
-__version__ = "2.46"
+__version__ = "2.47"
 __release__ = "2"
-__revision__ = "46"
+__revision__ = "47"
 __credits__ = """
 Authentication code contributed by Donn Cave <donn@u.washington.edu> June 1998.
 String method conversion by ESR, February 2001.
@@ -47,7 +47,8 @@ Fix for missing idle_lock in _handler() provided by Franklin Brook <franklin@bro
 Conversion to Python3 provided by F. Malina <fmalina@gmail.com> February 2015.
 Fix for READ-ONLY error from multiple EXAMINE/SELECT calls by Pierre-Louis Bonicoli <pierre-louis.bonicoli@gmx.fr> March 2015.
 Fix for null strings appended to untagged responses by Pierre-Louis Bonicoli <pierre-louis.bonicoli@gmx.fr> March 2015.
-Fix for correct byte encoding for _CRAM_MD5_AUTH taken from python3.5 imaplib.py June 2015."""
+Fix for correct byte encoding for _CRAM_MD5_AUTH taken from python3.5 imaplib.py June 2015.
+Fix for correct Python 3 exception handling by Tobias Brink <tobias.brink@gmail.com> August 2015."""
 __author__ = "Piers Lauder <piers@janeelix.com>"
 __URL__ = "http://imaplib2.sourceforge.net"
 __license__ = "Python License"
@@ -444,19 +445,22 @@ class IMAP4(object):
             af, socktype, proto, canonname, sa = res
             try:
                 s = socket.socket(af, socktype, proto)
-            except socket.error as msg:
+            except socket.error as m:
+                msg = m
                 continue
             try:
                 for i in (0, 1):
                     try:
                         s.connect(sa)
                         break
-                    except socket.error as msg:
+                    except socket.error as m:
+                        msg = m
                         if len(msg.args) < 2 or msg.args[0] != errno.EINTR:
                             raise
                 else:
                     raise socket.error(msg)
-            except socket.error as msg:
+            except socket.error as m:
+                msg = m
                 s.close()
                 continue
             break
