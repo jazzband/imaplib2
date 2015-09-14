@@ -17,9 +17,9 @@ Public functions: Internaldate2Time
 __all__ = ("IMAP4", "IMAP4_SSL", "IMAP4_stream",
            "Internaldate2Time", "ParseFlags", "Time2Internaldate")
 
-__version__ = "2.47"
+__version__ = "2.48"
 __release__ = "2"
-__revision__ = "47"
+__revision__ = "48"
 __credits__ = """
 Authentication code contributed by Donn Cave <donn@u.washington.edu> June 1998.
 String method conversion by ESR, February 2001.
@@ -48,7 +48,8 @@ Conversion to Python3 provided by F. Malina <fmalina@gmail.com> February 2015.
 Fix for READ-ONLY error from multiple EXAMINE/SELECT calls by Pierre-Louis Bonicoli <pierre-louis.bonicoli@gmx.fr> March 2015.
 Fix for null strings appended to untagged responses by Pierre-Louis Bonicoli <pierre-louis.bonicoli@gmx.fr> March 2015.
 Fix for correct byte encoding for _CRAM_MD5_AUTH taken from python3.5 imaplib.py June 2015.
-Fix for correct Python 3 exception handling by Tobias Brink <tobias.brink@gmail.com> August 2015."""
+Fix for correct Python 3 exception handling by Tobias Brink <tobias.brink@gmail.com> August 2015.
+Fix to allow interruptible IDLE command by Tim Peoples <dromedary512@users.sf.net> September 2015."""
 __author__ = "Piers Lauder <piers@janeelix.com>"
 __URL__ = "http://imaplib2.sourceforge.net"
 __license__ = "Python License"
@@ -183,7 +184,7 @@ class Request(object):
     def get_response(self, exc_fmt=None):
         self.callback = None
         if __debug__: self.parent._log(3, '%s:%s.ready.wait' % (self.name, self.tag))
-        self.ready.wait()
+        self.ready.wait(sys.float_info.max)
 
         if self.aborted is not None:
             typ, val = self.aborted
@@ -1306,7 +1307,7 @@ class IMAP4(object):
             self.commands_lock.release()
             if need_event:
                 if __debug__: self._log(3, 'sync command %s waiting for empty commands Q' % name)
-                self.state_change_free.wait()
+                self.state_change_free.wait(sys.float_info.max)
                 if __debug__: self._log(3, 'sync command %s proceeding' % name)
 
         if self.state not in Commands[name][CMD_VAL_STATES]:
@@ -2465,7 +2466,7 @@ if __name__ == '__main__':
     )
 
 
-    AsyncError = None
+    AsyncError, M = None, None
 
     def responder(cb_arg_list):
         response, cb_arg, error = cb_arg_list
@@ -2588,7 +2589,7 @@ if __name__ == '__main__':
         print('All tests OK.')
 
     except:
-        if not idle_intr or not 'IDLE' in M.capabilities:
+        if not idle_intr or M is None or not 'IDLE' in M.capabilities:
             print('Tests failed.')
 
             if not debug:
