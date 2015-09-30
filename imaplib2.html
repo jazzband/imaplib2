@@ -24,21 +24,14 @@ in existing clients with no changes in the code, but see the <i>caveat</i> below
 and/or <code>port</code>. The defaults are <code>localhost</code> and <code>143</code>
 - the standard <small>IMAP4</small> port number.</p>
 
-<p>There are also six other optional arguments:
-<code>debug=level, debug_file=file, identifier=string, timeout=seconds, debug_buf_lvl=level, tls_level="tls_compat"</code>.
+<p>There are also five other optional arguments:
+<code>debug=level, debug_file=file, identifier=string, timeout=seconds, debug_buf_lvl=level</code>.
 Setting <code>debug</code> <i>level</i> (default: 0) to anything above <code>debug_buf_lvl</code> (default: 3)
 causes every action to be printed to <i>file</i> (default: <i>sys.stderr</i>).
 Otherwise actions are logged in a circular buffer and the last 20 printed on errors.
 The third argument provides a string to be prepended to thread names - useful during debugging (default: target host).
 The forth argument sets a timeout for responses from the server, after which the instance will abort.
 Note that this timeout is overridden by an IDLE timeout when active.
-</p>
-
-<p>
-The recognized values for <code>tls_level</code> are:
-<i>tls_secure</i>: accept only TLS protocols recognized as "secure"
-<i>tls_no_ssl</i>: disable SSLv2 and SSLv3 support
-<i>tls_compat</i>: accept all SSL/TLS versions
 </p>
 
 <p>
@@ -398,7 +391,7 @@ so other responses should be obtained by calling <code>response('FLAGS')</code> 
 <DD><small>IMAP4</small>rev1 extension <small>SORT</small> command.</DD>
 
 <br>
-<DT><code>starttls</code>(<I>keyfile</I>, <I>certfile</I>, <I>ca_certs</I>, <I>cert_verify_cb</I>, <I>ssl_version</I>)</DT>
+<DT><code>starttls</code>(<I>keyfile</I>, <I>certfile</I>, <I>ca_certs</I>, <I>cert_verify_cb</I>, <I>ssl_version</I>="ssl23", <I>tls_level</I>="tls_compat")</DT>
 <DD>Start TLS negotiation as per RFC 2595.
 If non-null, <I>cert_verify_cb</I> will be called to verify the server certificate,
 with peer certificate and hostname as parameters.
@@ -408,6 +401,15 @@ If <I>cert_verify_cb</I> returns a non-null response, an SSL exception will be r
 	if 'STARTTLS' in imapobj.capabilities:
 		imapobj.starttls()
 </PRE>
+
+<p>
+The recognized values for <code>tls_level</code> are:
+<dl>
+<dd><i>tls_secure</i>: accept only TLS protocols recognized as "secure"
+<dd><i>tls_no_ssl</i>: disable SSLv2 and SSLv3 support
+<dd><i>tls_compat</i>: accept all SSL/TLS versions
+</dl>
+</p>
 </DD>
 
 <br>
