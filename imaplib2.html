@@ -24,14 +24,21 @@ in existing clients with no changes in the code, but see the <i>caveat</i> below
 and/or <code>port</code>. The defaults are <code>localhost</code> and <code>143</code>
 - the standard <small>IMAP4</small> port number.</p>
 
-<p>There are also five other optional arguments:
-<code>debug=level, debug_file=file, identifier=string, timeout=seconds, debug_buf_lvl=level</code>.
-Setting <code>debug</code> <i>level</i> (default: 0) to anything above debug_buf_lvl (default: 3)
+<p>There are also six other optional arguments:
+<code>debug=level, debug_file=file, identifier=string, timeout=seconds, debug_buf_lvl=level, tls_level="tls_compat"</code>.
+Setting <code>debug</code> <i>level</i> (default: 0) to anything above <code>debug_buf_lvl</code> (default: 3)
 causes every action to be printed to <i>file</i> (default: <i>sys.stderr</i>).
 Otherwise actions are logged in a circular buffer and the last 20 printed on errors.
 The third argument provides a string to be prepended to thread names - useful during debugging (default: target host).
 The forth argument sets a timeout for responses from the server, after which the instance will abort.
 Note that this timeout is overridden by an IDLE timeout when active.
+</p>
+
+<p>
+The recognized values for <code>tls_level</code> are:
+<i>tls_secure</i>: accept only TLS protocols recognized as "secure"
+<i>tls_no_ssl</i>: disable SSLv2 and SSLv3 support
+<i>tls_compat</i>: accept all SSL/TLS versions
 </p>
 
 <p>
