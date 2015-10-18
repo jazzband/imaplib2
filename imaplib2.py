@@ -1349,8 +1349,8 @@ class IMAP4(object):
 
         if self.state not in Commands[name][CMD_VAL_STATES]:
             self.literal = None
-            raise self.error('command %s illegal in state %s'
-                                % (name, self.state))
+            raise self.error('command %s illegal in state %s, only allowed in states %s'
+                                % (name, self.state, ', '.join(Commands[name][CMD_VAL_STATES])))
 
         self._check_bye()
 
