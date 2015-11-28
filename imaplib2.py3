@@ -17,9 +17,9 @@ Public functions: Internaldate2Time
 __all__ = ("IMAP4", "IMAP4_SSL", "IMAP4_stream",
            "Internaldate2Time", "ParseFlags", "Time2Internaldate")
 
-__version__ = "3.01"
+__version__ = "3.02"
 __release__ = "3"
-__revision__ = "01"
+__revision__ = "02"
 __credits__ = """
 Authentication code contributed by Donn Cave <donn@u.washington.edu> June 1998.
 String method conversion by ESR, February 2001.
@@ -51,7 +51,8 @@ Fix for correct byte encoding for _CRAM_MD5_AUTH taken from python3.5 imaplib.py
 Fix for correct Python 3 exception handling by Tobias Brink <tobias.brink@gmail.com> August 2015.
 Fix to allow interruptible IDLE command by Tim Peoples <dromedary512@users.sf.net> September 2015.
 Add support for TLS levels by Ben Boeckel <mathstuf@gmail.com> September 2015.
-Fix for shutown exception by Sebastien Gross <seb@chezwam.org> November 2015."""
+Fix for shutown exception by Sebastien Gross <seb@chezwam.org> November 2015.
+Add support for server BINARY mode (supplied by offlineimap-project) November 2015."""
 __author__ = "Piers Lauder <piers@janeelix.com>"
 __URL__ = "http://imaplib2.sourceforge.net"
 __license__ = "Python License"
@@ -1314,7 +1315,10 @@ class IMAP4(object):
                 literator = literal
             else:
                 literator = None
-                data = data + bytes(' {%s}' % len(literal), 'ASCII')
+                if 'BINARY' in self.capabilities:
+                    data = data + bytes(' ~{%s}' % len(literal), 'ASCII')
+                else:
+                    data = data + bytes(' {%s}' % len(literal), 'ASCII')
 
         if __debug__: self._log(4, 'data=%r' % data)
 
