@@ -15,11 +15,12 @@ Public functions: Internaldate2Time
 
 
 __all__ = ("IMAP4", "IMAP4_SSL", "IMAP4_stream",
-           "Internaldate2Time", "ParseFlags", "Time2Internaldate")
+           "Internaldate2Time", "ParseFlags", "Time2Internaldate",
+           "Mon2num", "MonthNames")
 
-__version__ = "2.53"
+__version__ = "2.54"
 __release__ = "2"
-__revision__ = "53"
+__revision__ = "54"
 __credits__ = """
 Authentication code contributed by Donn Cave <donn@u.washington.edu> June 1998.
 String method conversion by ESR, February 2001.
