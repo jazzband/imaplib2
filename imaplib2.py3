@@ -16,7 +16,7 @@ Public functions: Internaldate2Time
 
 __all__ = ("IMAP4", "IMAP4_SSL", "IMAP4_stream",
            "Internaldate2Time", "ParseFlags", "Time2Internaldate"
-           "Mon2num", "MonthNames")
+           "Mon2num", "MonthNames", "InternalDate")
 
 __version__ = "3.02"
 __release__ = "3"
