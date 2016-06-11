@@ -433,7 +433,7 @@ class IMAP4(object):
             import ssl
 
             TLS_MAP = {}
-            if hasattr(ssl, "PROTOCOL_TLSv1_2"):        # py3
+            if hasattr(ssl, "PROTOCOL_TLSv1_2"):
                 TLS_MAP[TLS_SECURE] = {
                     "tls1_2": ssl.PROTOCOL_TLSv1_2,
                     "tls1_1": ssl.PROTOCOL_TLSv1_1,
