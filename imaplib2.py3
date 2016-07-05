@@ -18,9 +18,9 @@ __all__ = ("IMAP4", "IMAP4_SSL", "IMAP4_stream",
            "Internaldate2Time", "ParseFlags", "Time2Internaldate"
            "Mon2num", "MonthNames", "InternalDate")
 
-__version__ = "3.02"
+__version__ = "3.03"
 __release__ = "3"
-__revision__ = "02"
+__revision__ = "03"
 __credits__ = """
 Authentication code contributed by Donn Cave <donn@u.washington.edu> June 1998.
 String method conversion by ESR, February 2001.
@@ -99,6 +99,7 @@ Commands = {
         'CREATE':       ((AUTH, SELECTED),            True),
         'DELETE':       ((AUTH, SELECTED),            True),
         'DELETEACL':    ((AUTH, SELECTED),            True),
+        'ENABLE':       ((AUTH,),                     False),
         'EXAMINE':      ((AUTH, SELECTED),            False),
         'EXPUNGE':      ((SELECTED,),                 True),
         'FETCH':        ((SELECTED,),                 True),
@@ -279,16 +280,14 @@ class IMAP4(object):
     class abort(error): pass        # Service errors - close and retry
     class readonly(abort): pass     # Mailbox status changed to READ-ONLY
 
+    # These must be encoded according to utf8 setting in _mode_xxx():
+    _literal = br'.*{(?P<size>\d+)}$'
+    _untagged_status = br'\* (?P<data>\d+) (?P<type>[A-Z-]+)( (?P<data2>.*))?'
 
     continuation_cre = re.compile(br'\+( (?P<data>.*))?')
-    literal_cre = re.compile(br'.*{(?P<size>\d+)}$')
     mapCRLF_cre = re.compile(br'\r\n|\r|\n')
-        # Need to quote "atom-specials" :-
-        #   "(" / ")" / "{" / SP / 0x00 - 0x1f / 0x7f / "%" / "*" / DQUOTE / "\" / "]"
-        # so match not the inverse set
     response_code_cre = re.compile(br'\[(?P<type>[A-Z-]+)( (?P<data>[^\]]*))?\]')
     untagged_response_cre = re.compile(br'\* (?P<type>[A-Z-]+)( (?P<data>.*))?')
-    untagged_status_cre = re.compile(br'\* (?P<data>\d+) (?P<type>[A-Z-]+)( (?P<data2>.*))?')
 
 
     def __init__(self, host=None, port=None, debug=None, debug_file=None, identifier=None, timeout=None, debug_buf_lvl=None):
@@ -319,6 +318,8 @@ class IMAP4(object):
         self.tagre = re.compile(br'(?P<tag>'
                         + self.tagpre
                         + br'\d+) (?P<type>[A-Z]+) (?P<data>.*)', re.ASCII)
+
+        self._mode_ascii()
 
         if __debug__: self._init_debug(debug, debug_file, debug_buf_lvl)
 
@@ -401,6 +402,30 @@ class IMAP4(object):
         if attr in Commands:
             return getattr(self, attr.lower())
         raise AttributeError("Unknown IMAP4 command: '%s'" % attr)
+
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        try:
+            self.logout()
+        except OSError:
+            pass
+
+
+    def _mode_ascii(self):
+        self.utf8_enabled = False
+        self._encoding = 'ascii'
+        self.literal_cre = re.compile(self._literal, re.ASCII)
+        self.untagged_status_cre = re.compile(self._untagged_status, re.ASCII)
+
+
+    def _mode_utf8(self):
+        self.utf8_enabled = True
+        self._encoding = 'utf-8'
+        self.literal_cre = re.compile(self._literal)
+        self.untagged_status_cre = re.compile(self._untagged_status)
 
 
 
@@ -623,7 +648,10 @@ class IMAP4(object):
             date_time = None
         if isinstance(message, str):
             message = bytes(message, 'ASCII')
-        self.literal = self.mapCRLF_cre.sub(CRLF, message)
+        literal = self.mapCRLF_cre.sub(CRLF, message)
+        if self.utf8_enabled:
+            literal = b'UTF8 (' + literal + b')'
+        self.literal = literal
         try:
             return self._simple_command(name, mailbox, flags, date_time, **kw)
         finally:
@@ -720,6 +748,19 @@ class IMAP4(object):
         Delete the ACLs (remove any rights) set for who on mailbox."""
 
         return self._simple_command('DELETEACL', mailbox, who, **kw)
+
+
+    def enable(self, capability):
+        """Send an RFC5161 enable string to the server.
+
+        (typ, [data]) = <intance>.enable(capability)
+        """
+        if 'ENABLE' not in self.capabilities:
+            raise self.error("Server does not support ENABLE")
+        typ, data = self._simple_command('ENABLE', capability)
+        if typ == 'OK' and 'UTF8=ACCEPT' in capability.upper():
+            self._mode_utf8()
+        return typ, data
 
 
     def examine(self, mailbox='INBOX', **kw):
@@ -872,7 +913,7 @@ class IMAP4(object):
     def _CRAM_MD5_AUTH(self, challenge):
         """Authobject to use with CRAM-MD5 authentication."""
         import hmac
-        pwd = (self.password.encode('ASCII') if isinstance(self.password, str)
+        pwd = (self.password.encode('utf-8') if isinstance(self.password, str)
                                              else self.password)
         return self.user + " " + hmac.HMAC(pwd, challenge, 'md5').hexdigest()
 
@@ -973,11 +1014,14 @@ class IMAP4(object):
     def search(self, charset, *criteria, **kw):
         """(typ, [data]) = search(charset, criterion, ...)
         Search mailbox for matching messages.
+        If UTF8 is enabled, charset MUST be None.
         'data' is space separated list of matching message numbers."""
 
         name = 'SEARCH'
         kw['untagged_response'] = name
         if charset:
+            if self.utf8_enabled:
+                raise self.error("Non-None charset not valid in UTF8 mode")
             return self._simple_command(name, 'CHARSET', charset, *criteria, **kw)
         return self._simple_command(name, *criteria, **kw)
 
@@ -1300,12 +1344,12 @@ class IMAP4(object):
 
         rqb = self._request_push(name=name, **kw)
 
-        name = bytes(name, 'ASCII')
+        name = bytes(name, self._encoding)
         data = rqb.tag + b' ' + name
         for arg in args:
             if arg is None: continue
             if isinstance(arg, str):
-                arg = bytes(arg, "ASCII")
+                arg = bytes(arg, self._encoding)
             data = data + b' ' + arg
 
         literal = self.literal
@@ -1315,7 +1359,7 @@ class IMAP4(object):
                 literator = literal
             else:
                 literator = None
-                data = data + bytes(' {%s}' % len(literal), 'ASCII')
+                data = data + bytes(' {%s}' % len(literal), self._encoding)
 
         if __debug__: self._log(4, 'data=%r' % data)
 
@@ -2203,7 +2247,7 @@ class _Authenticator(object):
         #
         oup = b''
         if isinstance(inp, str):
-            inp = inp.encode('ASCII')
+            inp = inp.encode('utf-8')
         while inp:
             if len(inp) > 48:
                 t = inp[:48]
