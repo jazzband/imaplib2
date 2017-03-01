@@ -1,4 +1,4 @@
-Threaded Python IMAP4 client version 3.03.
+Threaded Python IMAP4 client version 3.04.
 
 Based on RFC 3501 and original imaplib module.
 

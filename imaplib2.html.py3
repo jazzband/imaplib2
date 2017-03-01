@@ -219,6 +219,16 @@ This is the recommended command before <small>LOGOUT</small>.</DD>
 <DD>Delete old mailbox.</DD>
 
 <br>
+<DT><code>enable</code>(<I>capability</I>)</DT>
+<DD>Send an RFC5161 enable string to the server.
+EG: ask the server to enable UTF-8 message encoding:
+<PRE>
+	if 'ENABLE' in imapobj.capabilities:
+		imapobj.enable("UTF8=ACCEPT")
+</PRE>
+</DD>
+
+<br>
 <DT><code>enable_compression</code>()</DT>
 <DD>Ask the server to start compressing the connection.
 Should be called from user of this class after instantiation, as in:
