@@ -18,9 +18,9 @@ __all__ = ("IMAP4", "IMAP4_SSL", "IMAP4_stream",
            "Internaldate2Time", "ParseFlags", "Time2Internaldate",
            "Mon2num", "MonthNames", "InternalDate")
 
-__version__ = "3.04"
+__version__ = "3.05"
 __release__ = "3"
-__revision__ = "04"
+__revision__ = "05"
 __credits__ = """
 Authentication code contributed by Donn Cave <donn@u.washington.edu> June 1998.
 String method conversion by ESR, February 2001.
@@ -1384,6 +1384,9 @@ class IMAP4(object):
 
             if not ok:
                 break
+
+            if data == 'go ahead':	# Apparently not uncommon broken IMAP4 server response to AUTHENTICATE command
+                data = ''
 
             # Send literal
 
