@@ -1,0 +1,505 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<HTML>
+
+<HEAD>
+<TITLE>Threaded IMAP4rev1 client</TITLE>
+</HEAD>
+
+<BODY BGCOLOR="#FFFFFF" TEXT="#000000">
+<H3>Python threaded IMAP4 client module <code>imaplib2</code></H3>
+
+<p>This module defines a class, <code>IMAP4</code>,
+which encapsulates a threaded connection to an <small>IMAP4</small> server
+and implements the <small>IMAP4</small>rev1 client protocol
+as defined in <small>RFC</small> 3501 with several extensions.
+This module presents an almost identical API
+as that provided by the standard python library module <code>imaplib</code>,
+the main difference being that this version
+allows parallel execution of commands on the <small>IMAP4</small> server,
+and implements the <small>IMAP4</small>rev1 <code>IDLE</code> extension.
+(<code>imaplib2</code> can be substituted for <code>imaplib</code>
+in existing clients with no changes in the code, but see the <i>caveat</i> below.)
+
+<p>An <code>IMAP4</code> instance is instantiated with an optional <code>host</code>
+and/or <code>port</code>. The defaults are <code>localhost</code> and <code>143</code>
+- the standard <small>IMAP4</small> port number.</p>
+
+<p>There are also five other optional arguments:
+<code>debug=level, debug_file=file, identifier=string, timeout=seconds, debug_buf_lvl=level</code>.
+Setting <code>debug</code> <i>level</i> (default: 0) to anything above <code>debug_buf_lvl</code> (default: 3)
+causes every action to be printed to <i>file</i> (default: <i>sys.stderr</i>).
+Otherwise actions are logged in a circular buffer and the last 20 printed on errors.
+The third argument provides a string to be prepended to thread names - useful during debugging (default: target host).
+The forth argument sets a timeout for responses from the server, after which the instance will abort.
+Note that this timeout is overridden by an IDLE timeout when active.
+</p>
+
+<p>
+<b>Caveat</b>: Once an instance has been created,
+the invoker must call the <code>logout</code> method before discarding it, to shut down the threads.
+</p>
+
+<p>There are two classes derived from <code>IMAP4</code>
+which provide alternate transport mechanisms:</p>
+
+<DL>
+
+<DT><code>IMAP4_SSL</code></DT>
+<DD><small>IMAP4</small> client class over an SSL connection.</DD>
+
+<DT><code>IMAP4_stream</code></DT>
+<DD><small>IMAP4</small> client class over a stream.</DD>
+
+</DL>
+
+<p>There are also 2 utility methods provided for processing <small>IMAP4</small> date strings:</p>
+
+<DL>
+
+<DT><code>Internaldate2Time</code>(<I>datestr</I>)</DT>
+<DD>Converts an <small>IMAP4</small> <code>INTERNALDATE</code> string to Universal Time.
+Returns a <code>time</code> module tuple.</DD>
+
+<DT><code>Time2Internaldate</code>(<I>date_time</I>)</DT>
+<DD>Converts <code>date_time</code>
+(a <code>time</code> module tuple,
+or an integer or float seconds)
+to an <small>IMAP4</small> <code>INTERNALDATE</code> representation.
+Returns a string in the form:<BR><code>"DD-Mmm-YYYY HH:MM:SS +HHMM"</code>
+(including double-quotes).</DD>
+
+</DL>
+
+<p>And there is one utility method for parsing <small>IMAP4</small> <code>FLAGS</code> responses:</p>
+
+<DL>
+
+<DT><code>ParseFlags</code>(<I>response</I>)</DT>
+<DD>Convert an <small>IMAP4</small> flags response
+(a string of the form <code>"...FLAGS (flag ...)"</code>)
+to a python tuple..</DD>
+
+</DL>
+
+<H5>IMAP4 Objects</H5>
+
+<p>All <small>IMAP4</small>rev1 commands are represented by methods of the same name</p>
+
+<p>Each command returns a tuple: <code>(type, [data, ...])</code>
+where <code>type</code> is usually <code>'OK'</code> or <code>'NO'</code>,
+and <code>data</code> is either the
+text from the command response
+(always true when <code>type</code> is <code>'NO'</code>),
+or mandated results from the command.
+Each <code>data</code> is either a string, or a tuple.
+If a tuple, then the first part is the
+header of the response, and the second part contains the data (ie: <i>literal</i> value).</p>
+
+<p>Any logical errors raise the exception class
+<code>&lt;instance&gt;.error("&lt;reason&gt;")</code>.
+<small>IMAP4</small> server errors raise <code>&lt;instance&gt;.abort("&lt;reason&gt;")</code>,
+which is a sub-class of <code>error</code>.
+Mailbox status changes from <code>READ-WRITE</code> to <code>READ-ONLY</code>
+raise <code>&lt;instance&gt;.readonly("&lt;reason&gt;")</code>,
+which is a sub-class of <code>abort</code>.
+Note that closing the instance and instantiating a new one
+will usually recover from an <code>abort</code>.</p>
+
+<p>
+All commands take two optional named arguments:
+<code>callback</code> and <code>cb_arg</code>.
+If <code>callback</code> is provided then the command is asynchronous
+(the <small>IMAP4</small> command is scheduled, and the call returns immediately),
+and the result will be posted by invoking <code>callback</code> with a single argument:
+<UL>
+<code>callback(((type, [data, ...]), cb_arg, None))</code>
+</UL>
+or, if there was a problem:
+<UL>
+<code>callback((None, cb_arg, (exception class, reason)))</code>.
+</UL>
+</p>
+
+<p>
+Otherwise the command is synchronous (waits for result). But note
+that state-changing commands will both block until previous commands have completed,
+and block subsequent commands until they have finished.
+</p>
+
+<p>All (non-callback) arguments to commands are converted to strings,
+except for <code>authenticate</code>,
+and the last argument to <code>append</code> which is passed as an <small>IMAP4</small> literal.
+If necessary
+(the string contains any
+non-printing characters or white-space and isn't enclosed with either
+parentheses or double quotes or single quotes)
+each string is quoted.
+However, the <I>password</I> argument to the <code>login</code> command is always quoted.</p>
+
+<p>If you want to avoid having an argument string quoted
+(eg: the <i>flags</i> argument to <code>store</code>)
+then enclose the string in parentheses (eg: <code>(\Deleted)</code>).
+If you are using <I>sequence sets</I>
+containing the wildcard character '*', then enclose the argument
+in single quotes: the quotes will be removed and the resulting
+string passed unquoted.</p>
+
+<p>To summarise the quoting rules:
+<ul>
+<li>a string is automatically quoted if it contains at least one of the
+<mall>IMAP4</small> <I>atom-special</I> characters with the following exceptions:
+<li>the password argument to the <code>login</code> command is always quoted;
+<li>a string enclosed in <code>"..."</code> or <code>(...)</code> is passed as is;
+<li>a string enclosed in <code>'...'</code> is stripped of the enclosing single
+quotes and the rest passed as is.
+</ul>
+
+<p>Note also that you can pass in an argument with a type that doesn't evaluate to <i>basestring</i>
+(eg: <code>bytearray</code>) and it will be converted to a string without quoting.</p>
+
+<p>There is one instance variable, <code>state</code>, that is useful for tracking
+whether the client needs to login to the server. If it has the
+value <code>"AUTH"</code> after instantiating the class, then the connection
+is pre-authenticated (otherwise it will be <code>"NONAUTH"</code>). Selecting a
+mailbox changes the state to be <code>"SELECTED"</code>, closing a mailbox changes
+back to <code>"AUTH"</code>, and once the client has logged out, the state changes
+to <code>"LOGOUT"</code> and no further commands may be issued.</p>
+
+<p>There is another instance variable, <code>capabilities</code>,
+that holds a list of the capabilities provided by the server (the
+same as the list returned by the <small>IMAP4</small> <code>CAPABILITY</code> command).
+
+
+<p>An <code>IMAP4</code> instance has the following methods:</p>
+
+<DL>
+
+<DT><code>append</code>(<I>mailbox, flags, date_time, message</I>)</DT>
+<DD>Append message to named mailbox.
+All args except <code>message</code> can be None</DD>
+
+<br>
+<DT><code>authenticate</code>(<I>mechanism, authobject</I>)</DT>
+<DD>Authenticate command - requires response processing.
+<BR>
+<I>mechanism</I> specifies which authentication mechanism is to
+be used - it must appear in <code>&lt;instance&gt;.capabilities</code> in the
+form <code>AUTH=</code><I>mechanism</I>.
+<BR>
+<I>authobject</I> must be a callable object:
+<UL>
+<code>data = authobject(response)</code>
+</UL>
+It will be called to process server continuation responses.
+It should return data that will be encoded and sent to the server.
+It should return None if the client abort response <code>*</code> should
+be sent instead.</DD>
+
+<br>
+<DT><code>capability</code>()</DT>
+<DD>Return server <small>IMAP4</small> capabilities.</DD>
+
+<br>
+<DT><code>check</code>()</DT>
+<DD>Checkpoint mailbox on server.</DD>
+
+<br>
+<DT><code>close</code>()</DT>
+<DD>Close currently selected mailbox.
+
+Deleted messages are removed from writable mailbox.
+This is the recommended command before <small>LOGOUT</small>.</DD>
+
+<br>
+<DT><code>copy</code>(<I>message_set, new_mailbox</I>)</DT>
+<DD>Copy <I>message_set</I> messages onto end of <I>new_mailbox</I>.</DD>
+
+<br>
+<DT><code>create</code>(<I>mailbox</I>)</DT>
+<DD>Create new mailbox.</DD>
+
+<br>
+<DT><code>delete</code>(<I>mailbox</I>)</DT>
+<DD>Delete old mailbox.</DD>
+
+<br>
+<DT><code>enable</code>(<I>capability</I>)</DT>
+<DD>Send an RFC5161 enable string to the server.
+EG: ask the server to enable UTF-8 message encoding:
+<PRE>
+	if 'ENABLE' in imapobj.capabilities:
+		imapobj.enable("UTF8=ACCEPT")
+</PRE>
+</DD>
+
+<br>
+<DT><code>enable_compression</code>()</DT>
+<DD>Ask the server to start compressing the connection.
+Should be called from user of this class after instantiation, as in:
+<PRE>
+	if 'COMPRESS=DEFLATE' in imapobj.capabilities:
+		imapobj.enable_compression()
+</PRE>
+</DD>
+
+<br>
+<DT><code>examine</code>(<I>mailbox</I>='INBOX')</DT>
+<DD>Select a mailbox for <small>READ-ONLY</small> access.
+Flush all untagged responses.
+Returned <I>data</I> is count of messages in mailbox (EXISTS response).
+Mandated responses are <code>'FLAGS', 'EXISTS', 'RECENT', 'UIDVALIDITY'</code>,
+so other responses should be obtained by calling <code>response('FLAGS')</code> etc.</DD>
+
+<br>
+<DT><code>expunge</code>()</DT>
+<DD>Permanently remove deleted items from selected mailbox.
+Generates an <small>EXPUNGE</small> response for each deleted message.
+Returned <I>data</I> contains a list of <small>EXPUNGE</small> message numbers in order received.</DD>
+
+<br>
+<DT><code>fetch</code>(<I>message_set, message_parts</I>)</DT>
+<DD>Fetch (parts of) messages.
+<code>message_parts</code> should be a string of selected parts
+enclosed in parentheses, eg: <code>"(UID BODY[TEXT])"</code>.
+Returned <i>data</i> are tuples of message part envelope and data,
+followed by a string containing the trailer.</DD>
+
+<br>
+<DT><code>getacl</code>(<I>mailbox</I>)</DT>
+<DD>Get the Access Control Lists for a mailbox.</DD>
+
+<br>
+<DT><code>getannotation</code>(<I>mailbox_name, entry_specifier, attribute_specifier</I>)</DT>
+<DD>Retrieve ANNOTATIONS.</DD>
+
+<br>
+<DT><code>getquota</code>(<I>root</I>)</DT>
+<DD>Get the quota root's resource usage and limits.
+(Part of the <small>IMAP4 QUOTA</small> extension defined in RFC2087.)</DD>
+
+<br>
+<DT><code>getquotaroot</code>(<I>mailbox</I>)</DT>
+<DD>Get the list of quota roots for the named mailbox.</DD>
+
+<br>
+<DT><code>id</code>(<i>field1, value1, ...</i>)</DT>
+<DD>IMAP4 <small>ID</small> extension:
+exchange information for problem analysis and determination.
+NB: a single argument is assumed to be correctly formatted and is passed through unchanged
+(for backward compatibility with earlier version).
+The ID extension is defined in RFC 2971.</DD>
+
+<br>
+<DT><code>idle</code>(<i>timeout=</i><code>None</code>)</DT>
+<DD>Put server into <small>IDLE</small> mode
+until server notifies some change,
+or <i>timeout</i> (secs) occurs [default: 29 minutes],
+or another <small>IMAP4</small> command is scheduled.</DD>
+
+<br>
+<DT><code>list</code>(<I>directory=</I><code>'""'</code><I>, pattern=</I><code>'*'</code>)</DT>
+<DD>List mailbox names in directory matching pattern.
+Returned <i>data</i> is list of <small>LIST</small> responses.</DD>
+
+<br>
+<DT><code>login</code>(<I>user, password</I>)</DT>
+<DD>Identify client using plaintext password.
+The <I>password</I> argument will be quoted.</DD>
+
+<br>
+<DT><code>login_cram_md5</code>(<I>user, password</I>)</DT>
+<DD>Force use of <small>CRAM-MD5</small> authentication.</DD>
+
+<br>
+<DT><code>logout</code>()</DT>
+<DD>Shutdown connection to server.
+Returns server BYE response.
+NB: You must call this to shut down threads before discarding an instance.</DD>
+
+<br>
+<DT><code>lsub</code>(<I>directory</I>=<code>'""'</code>, <I>pattern</I>=<code>'*'</code>)</DT>
+<DD>List <I>subscribed</I> mailbox names in directory matching pattern.
+Returned <I>data</I> are tuples of message part envelope and data.</DD>
+
+<br>
+<DT><code>myrights</code>(<i>mailbox</i>)</DT>
+<DD>Show my Access Controll Lists for <i>mailbox</i>
+(i.e. the rights that I have on <i>mailbox</i>).</DD>
+
+<br>
+<DT><code>namespace</code>()</DT>
+<DD>Returns <small>IMAP</small> namespaces per RFC2342.</DD>
+
+<br>
+<DT><code>noop</code>()</DT>
+<DD>Send <small>NOOP</small> command.</DD>
+
+<br>
+<DT><code>partial</code>(<I>message_num, message_part, start, length</I>)</DT>
+<DD>Fetch truncated part of a message.
+Returned <I>data</I> is tuple of message part envelope and data. NB: obsolete.</DD>
+
+<br>
+<DT><code>pop_untagged_responses</code>()</DT>
+<DD>(Helper method.)
+Generator for obtaining untagged responses.
+Returns and removes untagged responses in order of reception.
+Use at your own risk!
+(Removing untagged responses required by outstanding commands may cause errors.)</DD>
+
+<br>
+<DT><code>proxyauth</code>(<I>user</I>)</DT>
+<DD>Assume authentication as <i>user</i>.
+(Allows an authorised administrator to proxy into any user's mailbox.)</DD>
+
+<br>
+<DT><code>recent</code>()</DT>
+<DD>(Helper method.)
+Return <small>RECENT</small> responses if any exist,
+else prompt server for an update using the <small>NOOP</small> command.
+Returned <I>data</I> is <code>None</code> if no new messages,
+else list of <small>RECENT</small> responses, most recent last.</DD>
+
+<br>
+<DT><code>rename</code>(<I>oldmailbox, newmailbox</I>)</DT>
+<DD>Rename old mailbox name to new.</DD>
+
+<br>
+<DT><code>response</code>(<I>code</I>)</DT>
+<DD>(Helper method.)
+Return data for response <I>code</I> if received, or None.
+Response value is cleared.
+Returns the given <I>code</I> in place of the usual <I>type.</I></DD>
+
+<br>
+<DT><code>search</code>(<I>charset, criterium, ...</I>)</DT>
+<DD>Search mailbox for matching messages.
+Returned <I>data</I> contains a space separated list of matching message numbers.</DD>
+
+<br>
+<DT><code>select</code>(<I>mailbox</I>='INBOX', <I>readonly</I>=False)</DT>
+<DD>Select a mailbox.
+Flush all untagged responses.
+Returned <I>data</I> is count of messages in mailbox (EXISTS response).
+Mandated responses are <code>'FLAGS', 'EXISTS', 'RECENT', 'UIDVALIDITY'</code>,
+so other responses should be obtained by calling <code>response('FLAGS')</code> etc.</DD>
+
+<br>
+<DT><code>setacl</code>(<I>mailbox, who, what</I>)</DT>
+<DD>Set the Access Control Lists for a mailbox.</DD>
+
+<br>
+<DT><code>setannotation</code>(<I>mailbox_name, entry, attribute_value[, entry, attribute_value]*</I>)</DT>
+<DD>Set ANNOTATIONS.</DD>
+
+<br>
+<DT><code>setquota</code>(<I>root, limits</I>)</DT>
+<DD>Set the quota root's resource limits.</DD>
+
+<br>
+<DT><code>sort</code>(<I>sort_criteria, charset, search_criteria, ...</I>)</DT>
+<DD><small>IMAP4</small>rev1 extension <small>SORT</small> command.</DD>
+
+<br>
+<DT><code>starttls</code>(<I>keyfile</I>, <I>certfile</I>, <I>ca_certs</I>, <I>cert_verify_cb</I>, <I>ssl_version</I>="ssl23", <I>tls_level</I>="tls_compat")</DT>
+<DD>Start TLS negotiation as per RFC 2595.
+If non-null, <I>cert_verify_cb</I> will be called to verify the server certificate,
+with peer certificate and hostname as parameters.
+If <I>cert_verify_cb</I> returns a non-null response, an SSL exception will be raised with the response as reason.
+<code>starttls</code> should be called from user of the <SMALL>IMAP4</SMALL> class after instantiation, as in:
+<PRE>
+	if 'STARTTLS' in imapobj.capabilities:
+		imapobj.starttls()
+</PRE>
+
+<p>
+The recognized values for <code>tls_level</code> are:
+<dl>
+<dd><i>tls_secure</i>: accept only TLS protocols recognized as "secure"
+<dd><i>tls_no_ssl</i>: disable SSLv2 and SSLv3 support
+<dd><i>tls_compat</i>: accept all SSL/TLS versions
+</dl>
+</p>
+</DD>
+
+<br>
+<DT><code>status</code>(<I>mailbox, names</I>)</DT>
+<DD>Request named status conditions for mailbox.</DD>
+
+<br>
+<DT><code>store</code>(<I>message_set, command, flag_list</I>)</DT>
+<DD>Alters flag dispositions for messages in mailbox.</DD>
+
+<br>
+<DT><code>subscribe</code>(<I>mailbox</I>)</DT>
+<DD>Subscribe to new mailbox.</DD>
+
+<br>
+<DT><code>thread</code>(<I>threading_algorithm, charset, search_criteria, ...</I>)</DT>
+<DD><small>IMAP4</small>rev1 extension <small>THREAD</small> command.</DD>
+
+<br>
+<DT><code>uid</code>(<I>command, arg, ...</I>)</DT>
+<DD>Execute <code>command arg ...</code> with messages identified by UID,
+rather than message number.
+Returns response appropriate to <I>command</I>.</DD>
+
+<br>
+<DT><code>unsubscribe</code>(<I>mailbox</I>)</DT>
+<DD>Unsubscribe from old mailbox.</DD>
+
+<br>
+<DT><code>xatom</code>(<I>command, arg, ...</I>)</DT>
+<DD>Allow simple extension commands as
+notified by server in <small>CAPABILITY</small> response.
+Returns response appropriate to <I>command</I>.</DD>
+
+</DL>
+
+<p><code>IMAP4</code> instances have a variable, <code>PROTOCOL_VERSION</code>,
+that is set to the most recent supported protocol in the <small>CAPABILITY</small> response.</p>
+
+<H5>Usage</H5>
+
+<p>Here is a minimal example (without error checking) that opens a mailbox
+and retrieves and prints all messages:</p>
+<PRE>
+	def cb(cb_arg_list):
+		response, cb_arg, error = cb_arg_list
+		typ, data = response
+		if not data:
+			return
+		for field in data:
+			if type(field) is not tuple:
+				continue
+			print('Message %s:\n%s\n'
+				% (field[0].split()[0], field[1]))
+
+	import getpass, imaplib2
+	M = imaplib2.IMAP4()
+	M.LOGIN(getpass.getuser(), getpass.getpass())
+	M.SELECT(readonly=True)
+	typ, data = M.SEARCH(None, 'ALL')
+	for num in data[0].split():
+		M.FETCH(num, '(RFC822)', callback=cb)
+	M.CLOSE()
+	M.LOGOUT()
+</PRE>
+
+<p>Note that <small>IMAP4</small> message numbers change as the mailbox changes,
+so it is highly advisable to use <small>UID</small>s instead via the <code>UID</code> command.</p>
+
+<p>At the end of the module,
+there is a test section that contains a more extensive example of usage.</p>
+
+<H5>References</H5>
+
+<p>Documents describing the protocol,
+and sources and binaries for servers implementing it,
+can all be found at
+<A HREF="http://www.washington.edu/imap">
+http://www.washington.edu/imap</A>.</p>
+
+</BODY>
+
+</HTML>
