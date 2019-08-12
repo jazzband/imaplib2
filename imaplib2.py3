@@ -1913,7 +1913,7 @@ class IMAP4(object):
                         break
                     stop += 1
                     line_part, start, line = \
-                        b'', stop, (line_part + data[start:stop]).decode(errors='ignore')
+                        b'', stop, line_part + data[start:stop]
                     if __debug__: self._log(4, '< %r' % line)
                     self.inq.put(line)
                     if self.TerminateReader:
