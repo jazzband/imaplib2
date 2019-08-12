@@ -18,9 +18,9 @@ __all__ = ("IMAP4", "IMAP4_SSL", "IMAP4_stream",
            "Internaldate2Time", "ParseFlags", "Time2Internaldate",
            "Mon2num", "MonthNames", "InternalDate")
 
-__version__ = "3.05"
+__version__ = "3.06"
 __release__ = "3"
-__revision__ = "05"
+__revision__ = "06"
 __credits__ = """
 Authentication code contributed by Donn Cave <donn@u.washington.edu> June 1998.
 String method conversion by ESR, February 2001.
@@ -52,7 +52,8 @@ Fix for correct byte encoding for _CRAM_MD5_AUTH taken from python3.5 imaplib.py
 Fix for correct Python 3 exception handling by Tobias Brink <tobias.brink@gmail.com> August 2015.
 Fix to allow interruptible IDLE command by Tim Peoples <dromedary512@users.sf.net> September 2015.
 Add support for TLS levels by Ben Boeckel <mathstuf@gmail.com> September 2015.
-Fix for shutown exception by Sebastien Gross <seb@chezwam.org> November 2015."""
+Fix for shutown exception by Sebastien Gross <seb@chezwam.org> November 2015.
+Fix for python3 conversion errata in _reader for poll by Mathias Ball <meb@leitstern.de> August 2019."""
 __author__ = "Piers Lauder <piers@janeelix.com>"
 __URL__ = "http://imaplib2.sourceforge.net"
 __license__ = "Python License"
