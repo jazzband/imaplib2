@@ -337,7 +337,7 @@ class IMAP4(object):
 
         if __debug__:
             if debug:
-                self._mesg('connected to %s on port %s' % (self.host, self.port))
+                self._mesg('connected to %s on port %s' % (host, port))
 
         # Threading
 
