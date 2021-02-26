@@ -16,7 +16,7 @@ Public functions: Internaldate2Time
 
 __all__ = ("IMAP4", "IMAP4_SSL", "IMAP4_stream",
            "Internaldate2Time", "ParseFlags", "Time2Internaldate",
-           "Mon2num", "MonthNames", "InternalDate")
+           "Mon2num", "MonthNames", "InternalDate", "__version__")
 
 __version__ = "3.06"
 __release__ = "3"
@@ -1370,7 +1370,7 @@ class IMAP4(object):
             self.ouq.put(rqb)
             return rqb
 
-        # Must setup continuation expectancy *before* ouq.put 
+        # Must setup continuation expectancy *before* ouq.put
         crqb = self._request_push(name=name, tag='continuation')
 
         self.ouq.put(rqb)
@@ -2554,7 +2554,7 @@ if __name__ == '__main__':
             run('id', ())
             run('id', ("(name imaplib2)",))
             run('id', ("version", __version__, "os", os.uname()[0]))
- 
+
         for cmd,args in test_seq2:
             if (cmd,args) != ('uid', ('SEARCH', 'SUBJECT', 'IMAP4 test')):
                 run(cmd, args)
