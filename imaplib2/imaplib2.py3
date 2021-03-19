@@ -183,7 +183,7 @@ class Request(object):
     def get_response(self, exc_fmt=None):
         self.callback = None
         if __debug__: self.parent._log(3, '%s:%s.ready.wait' % (self.name, self.tag))
-        self.ready.wait(threading.TIMEOUT_MAX)
+        self.ready.wait()
 
         if self.aborted is not None:
             typ, val = self.aborted
@@ -1317,7 +1317,7 @@ class IMAP4(object):
             self.commands_lock.release()
             if need_event:
                 if __debug__: self._log(3, 'sync command %s waiting for empty commands Q' % name)
-                self.state_change_free.wait(threading.TIMEOUT_MAX)
+                self.state_change_free.wait()
                 if __debug__: self._log(3, 'sync command %s proceeding' % name)
 
         if self.state not in Commands[name][CMD_VAL_STATES]:
