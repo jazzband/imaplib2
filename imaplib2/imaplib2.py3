@@ -16,7 +16,7 @@ Public functions: Internaldate2Time
 
 __all__ = ("IMAP4", "IMAP4_SSL", "IMAP4_stream",
            "Internaldate2Time", "ParseFlags", "Time2Internaldate",
-           "Mon2num", "MonthNames", "InternalDate")
+           "Mon2num", "MonthNames", "InternalDate", "version")
 
 __version__ = "3.06"
 __release__ = "3"
@@ -136,6 +136,26 @@ Commands = {
         }
 
 UID_direct = ('SEARCH', 'SORT', 'THREAD')
+
+
+def version(use_tuple=False):
+    """Return the version of this module.
+
+    Arguments
+    ---------
+    use_tuple : bool
+        Whether to return a string or a tuple of (major, minor). When True, the major and minor in the tuple will be
+        integers rather than strings.
+
+    Returns
+    -------
+    The version.
+    """
+
+    if use_tuple:
+        return (int(__release__), int(__revision__))
+
+    return __version__
 
 
 def Int2AP(num):
