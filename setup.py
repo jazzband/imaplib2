@@ -9,9 +9,11 @@ setup(
     author="Piers Lauder",
     url="https://github.com/bcoe/imaplib2",
     classifiers=[
-        "Programming Language :: Python :: 2",
-        "Programming Language :: Python :: 2.7",
         "Programming Language :: Python :: 3"
+        "Programming Language :: Python :: 3.6"
+        "Programming Language :: Python :: 3.7"
+        "Programming Language :: Python :: 3.8"
+        "Programming Language :: Python :: 3.9"
         "Intended Audience :: Developers",
         "Topic :: Software Development :: Libraries",
         "Topic :: Utilities",
