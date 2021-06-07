@@ -55,8 +55,8 @@ Add support for TLS levels by Ben Boeckel <mathstuf@gmail.com> September 2015.
 Fix for shutown exception by Sebastien Gross <seb@chezwam.org> November 2015.
 Fix for python3 conversion errata in _reader for poll by Mathias Ball <meb@leitstern.de> August 2019."""
 __author__ = "Piers Lauder <piers@janeelix.com>"
-__URL__ = "http://imaplib2.sourceforge.net"
-__license__ = "Python License"
+__URL__ = "https://github.com/jazzband/imaplib2"
+__license__ = "MIT"
 
 import binascii, calendar, errno, os, queue, random, re, select, socket, sys, time, threading, zlib
 
