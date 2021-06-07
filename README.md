@@ -1,4 +1,6 @@
-Threaded Python IMAP4 client version 3.05.
+# imaplib2: a threaded Python IMAP4 client
+
+[![Jazzband](https://jazzband.co/static/img/badge.svg)](https://jazzband.co/)
 
 Based on RFC 3501 and original imaplib module.
 
