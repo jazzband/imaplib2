@@ -3,8 +3,8 @@ requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.coverage.run]
+source = ["imaplib2/tests"]
 source_pkgs = ["imaplib2"]
-omit = ["*/tests/*"]
 
 [tool.coverage.paths]
 source = ["imaplib2/", "*/lib/*/site-packages/imaplib2"]
@@ -12,8 +12,19 @@ source = ["imaplib2/", "*/lib/*/site-packages/imaplib2"]
 [tool.tox]
 legacy_tox_ini = """
 [tox]
+minversion = 3.23.0
+requires =
+    tox-wheel
+    tox-gh-actions
 envlist = py{36,37,38,39}
 isolated_build = true
+
+[gh-actions]
+python =
+    3.6: py36
+    3.7: py37
+    3.8: py38
+    3.9: py39
 
 [testenv]
 wheel = True

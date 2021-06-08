@@ -27,9 +27,9 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install --upgrade tox tox-wheel coveralls
+          pip install --upgrade tox coveralls
       - name: Test with tox with coverage
-        run: tox -e py -- --cov -v
+        run: tox -- --cov -v
       - name: Upload coverage data to coveralls.io
         run: coveralls --service=github
         env:
