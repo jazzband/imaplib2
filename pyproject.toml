@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.coverage.run]
+source_pkgs = ["imaplib2"]
+omit = ["*/tests/*"]
+
+[tool.coverage.paths]
+source = ["imaplib2/", "*/lib/*/site-packages/imaplib2"]
+
+[tool.tox]
+legacy_tox_ini = """
+[tox]
+envlist = py{36,37,38,39}
+isolated_build = true
+
+[testenv]
+wheel = True
+deps = 
+    pytest
+    pytest-cov
+commands = 
+    pytest {posargs}
+"""
