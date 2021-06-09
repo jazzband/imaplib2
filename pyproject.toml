@@ -7,7 +7,11 @@ source = ["imaplib2/tests"]
 source_pkgs = ["imaplib2"]
 
 [tool.coverage.paths]
-source = ["imaplib2/", "*/lib/*/site-packages/imaplib2"]
+source = [
+    ".",
+    ".tox/*/lib/*/site-packages/",
+    '.tox\\*\\Lib\\site-packages\\',
+]
 
 [tool.tox]
 legacy_tox_ini = """
