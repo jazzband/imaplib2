@@ -55,8 +55,8 @@ Add support for TLS levels by Ben Boeckel <mathstuf@gmail.com> September 2015.
 Fix for shutown exception by Sebastien Gross <seb@chezwam.org> November 2015.
 Fix for python3 conversion errata in _reader for poll by Mathias Ball <meb@leitstern.de> August 2019."""
 __author__ = "Piers Lauder <piers@janeelix.com>"
-__URL__ = "http://imaplib2.sourceforge.net"
-__license__ = "Python License"
+__URL__ = "https://github.com/jazzband/imaplib2"
+__license__ = "MIT"
 
 import binascii, calendar, errno, os, queue, random, re, select, socket, sys, time, threading, zlib
 
@@ -1400,7 +1400,7 @@ class IMAP4(object):
             self.ouq.put(rqb)
             return rqb
 
-        # Must setup continuation expectancy *before* ouq.put 
+        # Must setup continuation expectancy *before* ouq.put
         crqb = self._request_push(name=name, tag='continuation')
 
         self.ouq.put(rqb)
@@ -2584,7 +2584,7 @@ if __name__ == '__main__':
             run('id', ())
             run('id', ("(name imaplib2)",))
             run('id', ("version", __version__, "os", os.uname()[0]))
- 
+
         for cmd,args in test_seq2:
             if (cmd,args) != ('uid', ('SEARCH', 'SUBJECT', 'IMAP4 test')):
                 run(cmd, args)
