@@ -1,7 +1,7 @@
 # imaplib2: a threaded Python IMAP4 client
 
 [![Jazzband](https://jazzband.co/static/img/badge.svg)](https://jazzband.co/)
-[![Coverage Status](https://coveralls.io/repos/github/jazzband/imaplib2/badge.svg?branch=master)](https://coveralls.io/github/jazzband/imaplib2?branch=master)
+[![codecov](https://codecov.io/gh/jazzband/imaplib2/branch/master/graph/badge.svg?token=DZZ3P6438E)](https://codecov.io/gh/jazzband/imaplib2)
 
 Based on RFC 3501 and original imaplib module.
 
