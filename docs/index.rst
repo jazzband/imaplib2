@@ -1,5 +1,9 @@
 Python threaded IMAP4 client module ``imaplib2``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+================================================
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Contents:
 
 This module defines a class, ``IMAP4``, which encapsulates a threaded
 connection to an IMAP4 server and implements the IMAP4rev1 client
@@ -56,7 +60,7 @@ And there is one utility method for parsing IMAP4 ``FLAGS`` responses:
    ``"...FLAGS (flag ...)"``) to a python tuple..
 
 IMAP4 Objects
-'''''''''''''
+-------------
 
 All IMAP4rev1 commands are represented by methods of the same name
 
@@ -332,7 +336,7 @@ response. Returns response appropriate to *command*.
 to the most recent supported protocol in the CAPABILITY response.
 
 Usage
-'''''
+-----
 
 Here is a minimal example (without error checking) that opens a mailbox
 and retrieves and prints all messages:
@@ -367,7 +371,15 @@ At the end of the module, there is a test section that contains a more
 extensive example of usage.
 
 References
-''''''''''
+----------
 
 Documents describing the protocol, and sources and binaries for servers
 implementing it, can all be found at http://www.washington.edu/imap.
+
+
+Indices and tables
+==================
+
+* :ref:`genindex`
+* :ref:`modindex`
+* :ref:`search`
