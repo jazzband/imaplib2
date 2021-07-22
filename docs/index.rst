@@ -5,6 +5,10 @@ Python threaded IMAP4 client module ``imaplib2``
    :maxdepth: 2
    :caption: Contents:
 
+   reference
+
+.. contents:: :local:
+
 This module defines a class, ``IMAP4``, which encapsulates a threaded
 connection to an IMAP4 server and implements the IMAP4rev1 client
 protocol as defined in RFC 3501 with several extensions. This module
