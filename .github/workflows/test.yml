@@ -38,3 +38,9 @@ jobs:
           flags: py${{ matrix.python-version }}
           fail_ci_if_error: true
           verbose: true
+      - name: Install docs dependencies
+        working-directory: docs
+        run: pip install --requirement requirements.txt
+      - name: Build docs
+        working-directory: docs
+        run: make html
