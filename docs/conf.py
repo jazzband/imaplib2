@@ -18,7 +18,7 @@
 # -- Project information -----------------------------------------------------
 
 project = 'imaplib2'
-copyright = '2021, Piers Lauder'
+copyright = '2021, The imaplib2 contributors'
 author = 'Piers Lauder'
 
 # The full version, including alpha/beta/rc tags
