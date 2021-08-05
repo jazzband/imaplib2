@@ -139,17 +139,15 @@ UID_direct = ('SEARCH', 'SORT', 'THREAD')
 
 
 def version(use_tuple=False):
-    """Return the version of this module.
+    """
+    Return the version of this module, either as a single string (the default) or a :class:`tuple`
+    of ``major_version, minor_version`` as integers
 
-    Arguments
-    ---------
-    use_tuple : bool
-        Whether to return a string or a tuple of (major, minor). When True, the major and minor in the tuple will be
-        integers rather than strings.
-
-    Returns
-    -------
-    The version.
+    :param use_tuple: Whether to return :class:`tuple`
+    :type use_tuple: :class:`bool`
+    :return: The version of this library, the format depends on the value of ``use_tuple``
+    :rtype: (:class:`int`, :class:`int`) if ``use_tuple``
+    :rtype: :class:`str` otherwise
     """
 
     if use_tuple:
