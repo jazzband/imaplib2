@@ -292,44 +292,44 @@ An ``IMAP4`` instance has the following methods:
    *tls_no_ssl*: disable SSLv2 and SSLv3 support
    *tls_compat*: accept all SSL/TLS versions
 
-| 
+|
 
 ``status``\ (*mailbox, names*)
 
 Request named status conditions for mailbox.
 
-| 
+|
 
 ``store``\ (*message_set, command, flag_list*)
 
 Alters flag dispositions for messages in mailbox.
 
-| 
+|
 
 ``subscribe``\ (*mailbox*)
 
 Subscribe to new mailbox.
 
-| 
+|
 
 ``thread``\ (*threading_algorithm, charset, search_criteria, ...*)
 
 IMAP4rev1 extension THREAD command.
 
-| 
+|
 
 ``uid``\ (*command, arg, ...*)
 
 Execute ``command arg ...`` with messages identified by UID, rather than
 message number. Returns response appropriate to *command*.
 
-| 
+|
 
 ``unsubscribe``\ (*mailbox*)
 
 Unsubscribe from old mailbox.
 
-| 
+|
 
 ``xatom``\ (*command, arg, ...*)
 
