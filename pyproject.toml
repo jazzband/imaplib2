@@ -32,9 +32,9 @@ python =
 
 [testenv]
 wheel = True
-deps = 
+deps =
     pytest
     pytest-cov
-commands = 
+commands =
     pytest {posargs}
 """
