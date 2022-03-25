@@ -20,7 +20,7 @@ minversion = 3.23.0
 requires =
     tox-wheel
     tox-gh-actions
-envlist = py{36,37,38,39}
+envlist = py{36,37,38,39,310}
 isolated_build = true
 
 [gh-actions]
@@ -29,6 +29,7 @@ python =
     3.7: py37
     3.8: py38
     3.9: py39
+    3.10: py310
 
 [testenv]
 wheel = True
