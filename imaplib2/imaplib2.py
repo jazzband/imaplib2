@@ -378,13 +378,13 @@ class IMAP4(object):
         self.inq = queue.Queue()
 
         self.wrth = threading.Thread(target=self._writer)
-        self.wrth.setDaemon(True)
+        self.wrth.daemon = True
         self.wrth.start()
         self.rdth = threading.Thread(target=self._reader)
-        self.rdth.setDaemon(True)
+        self.rdth.daemon = True
         self.rdth.start()
         self.inth = threading.Thread(target=self._handler)
-        self.inth.setDaemon(True)
+        self.inth.daemon = True
         self.inth.start()
 
         # Get server welcome message,
@@ -1159,7 +1159,7 @@ class IMAP4(object):
         if typ != 'OK':
             # Restart reader thread and error
             self.rdth = threading.Thread(target=self._reader)
-            self.rdth.setDaemon(True)
+            self.rdth.daemon = True
             self.rdth.start()
             raise self.error("Couldn't establish TLS session: %s" % dat)
 
@@ -1175,7 +1175,7 @@ class IMAP4(object):
         finally:
             # Restart reader thread
             self.rdth = threading.Thread(target=self._reader)
-            self.rdth.setDaemon(True)
+            self.rdth.daemon = True
             self.rdth.start()
 
         self._get_capabilities()
@@ -1742,7 +1742,7 @@ class IMAP4(object):
 
         resp_timeout = self.resp_timeout
 
-        threading.currentThread().setName(self.identifier + 'handler')
+        threading.current_thread().name = self.identifier + 'handler'
 
         time.sleep(0.1)   # Don't start handling before main thread ready
 
@@ -1820,7 +1820,7 @@ class IMAP4(object):
 
       def _reader(self):
 
-        threading.currentThread().setName(self.identifier + 'reader')
+        threading.current_thread().name = self.identifier + 'reader'
 
         if __debug__: self._log(1, 'starting using poll')
 
@@ -1903,7 +1903,7 @@ class IMAP4(object):
 
       def _reader(self):
 
-        threading.currentThread().setName(self.identifier + 'reader')
+        threading.current_thread().name = self.identifier + 'reader'
 
         if __debug__: self._log(1, 'starting using select')
 
@@ -1962,7 +1962,7 @@ class IMAP4(object):
 
     def _writer(self):
 
-        threading.currentThread().setName(self.identifier + 'writer')
+        threading.current_thread().name = self.identifier + 'writer'
 
         if __debug__: self._log(1, 'starting')
 
@@ -2034,7 +2034,7 @@ class IMAP4(object):
             if line[-2:] == CRLF:
                 line = line[:-2] + '\\r\\n'
 
-            tn = threading.currentThread().getName()
+            tn = threading.current_thread().name
 
             if lvl <= 1 or self.debug > self.debug_buf_lvl:
                 self.debug_lock.acquire()
@@ -2056,7 +2056,7 @@ class IMAP4(object):
             if secs is None:
                 secs = time.time()
             if tn is None:
-                tn = threading.currentThread().getName()
+                tn = threading.current_thread().name
             tm = time.strftime('%M:%S', time.localtime(secs))
             try:
                 self.debug_file.write('  %s.%02d %s %s\n' % (tm, (secs*100)%100, tn, s))
@@ -2552,7 +2552,7 @@ if __name__ == '__main__':
         return dat
 
     try:
-        threading.currentThread().setName('main')
+        threading.current_thread().name = 'main'
 
         if keyfile is not None:
             if not keyfile: keyfile = None
