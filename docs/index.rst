@@ -229,7 +229,7 @@ An ``IMAP4`` instance has the following methods:
    List *subscribed* mailbox names in directory matching pattern.
    Returned *data* are tuples of message part envelope and data.
 ``myrights``\ (*mailbox*)
-   Show my Access Controll Lists for *mailbox* (i.e. the rights that I
+   Show my Access Control Lists for *mailbox* (i.e. the rights that I
    have on *mailbox*).
 ``namespace``\ ()
    Returns IMAP namespaces per RFC2342.
