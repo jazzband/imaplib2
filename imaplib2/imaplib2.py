@@ -782,7 +782,7 @@ class IMAP4(object):
     def enable(self, capability):
         """Send an RFC5161 enable string to the server.
 
-        (typ, [data]) = <intance>.enable(capability)
+        (typ, [data]) = <instance>.enable(capability)
         """
         if 'ENABLE' not in self.capabilities:
             raise self.error("Server does not support ENABLE")
