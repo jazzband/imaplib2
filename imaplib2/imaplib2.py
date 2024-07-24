@@ -18,9 +18,9 @@ __all__ = ("IMAP4", "IMAP4_SSL", "IMAP4_stream",
            "Internaldate2Time", "ParseFlags", "Time2Internaldate",
            "Mon2num", "MonthNames", "InternalDate", "version")
 
-__version__ = "3.06"
+__version__ = "3.07"
 __release__ = "3"
-__revision__ = "06"
+__revision__ = "07"
 __credits__ = """
 Authentication code contributed by Donn Cave <donn@u.washington.edu> June 1998.
 String method conversion by ESR, February 2001.

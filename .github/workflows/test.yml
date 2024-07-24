@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-20.04
     strategy:
       matrix:
-        python-version: ["3.6", "3.7", "3.8", "3.9", "3.10"]
+        python-version: ["3.10", "3.11", "3.12"]
 
     steps:
       - name: Checkout code
@@ -30,14 +30,14 @@ jobs:
           pip install --upgrade tox
       - name: Test with tox with coverage
         run: tox -- --cov --cov-report=xml -v
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v1
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./coverage.xml
-          flags: py${{ matrix.python-version }}
-          fail_ci_if_error: true
-          verbose: true
+      #- name: Upload coverage to Codecov
+      #  uses: codecov/codecov-action@v1
+      #  with:
+      #    token: ${{ secrets.CODECOV_TOKEN }}
+      #    files: ./coverage.xml
+      #    flags: py${{ matrix.python-version }}
+      #    fail_ci_if_error: true
+      #    verbose: true
       - name: Install docs dependencies
         working-directory: docs
         run: pip install --requirement requirements.txt

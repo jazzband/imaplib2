@@ -13,33 +13,6 @@ source = [
     '.tox\\*\\Lib\\site-packages\\',
 ]
 
-[tool.tox]
-legacy_tox_ini = """
-[tox]
-minversion = 3.23.0
-requires =
-    tox-wheel
-    tox-gh-actions
-envlist = py{36,37,38,39,310}
-isolated_build = true
-
-[gh-actions]
-python =
-    3.6: py36
-    3.7: py37
-    3.8: py38
-    3.9: py39
-    3.10: py310
-
-[testenv]
-wheel = True
-deps =
-    pytest
-    pytest-cov
-commands =
-    pytest {posargs}
-"""
-
 [tool.codespell]
 # Ref: https://github.com/codespell-project/codespell#using-a-config-file
 skip = '.git*'
