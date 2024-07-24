@@ -2488,7 +2488,7 @@ if __name__ == '__main__':
     ('select', ('imaplib2_test2',)),
     ('search', (None, 'SUBJECT', '"IMAP4 test"')),
     ('fetch', ('1:*', '(FLAGS INTERNALDATE RFC822)')),
-    ('store', ('1', 'FLAGS', '(\Deleted)')),
+    ('store', ('1', 'FLAGS', r'(\Deleted)')),
     ('namespace', ()),
     ('expunge', ()),
     ('recent', ()),
@@ -2593,7 +2593,7 @@ if __name__ == '__main__':
             if not uid: continue
             run('uid', ('FETCH', uid[-1],
                     '(FLAGS INTERNALDATE RFC822.SIZE RFC822.HEADER RFC822.TEXT)'))
-            run('uid', ('STORE', uid[-1], 'FLAGS', '(\Deleted)'))
+            run('uid', ('STORE', uid[-1], 'FLAGS', r'(\Deleted)'))
             run('expunge', ())
 
         if 'IDLE' in M.capabilities:
@@ -2607,10 +2607,10 @@ if __name__ == '__main__':
             dat = run('fetch', (num, '(FLAGS INTERNALDATE RFC822)'), cb=False)
             M._mesg('fetch %s => %s' % (num, repr(dat)))
             run('idle', (2,))
-            run('store', (num, '-FLAGS', '(\Seen)'), cb=False),
+            run('store', (num, '-FLAGS', r'(\Seen)'), cb=False),
             dat = run('fetch', (num, '(FLAGS INTERNALDATE RFC822)'), cb=False)
             M._mesg('fetch %s => %s' % (num, repr(dat)))
-            run('uid', ('STORE', num, 'FLAGS', '(\Deleted)'))
+            run('uid', ('STORE', num, 'FLAGS', r'(\Deleted)'))
             run('expunge', ())
             if idle_intr:
                 M._mesg('HIT CTRL-C to interrupt IDLE')
