@@ -30,14 +30,14 @@ jobs:
           pip install --upgrade tox
       - name: Test with tox with coverage
         run: tox -- --cov --cov-report=xml -v
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v1
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./coverage.xml
-          flags: py${{ matrix.python-version }}
-          fail_ci_if_error: true
-          verbose: true
+      #- name: Upload coverage to Codecov
+      #  uses: codecov/codecov-action@v1
+      #  with:
+      #    token: ${{ secrets.CODECOV_TOKEN }}
+      #    files: ./coverage.xml
+      #    flags: py${{ matrix.python-version }}
+      #    fail_ci_if_error: true
+      #    verbose: true
       - name: Install docs dependencies
         working-directory: docs
         run: pip install --requirement requirements.txt
