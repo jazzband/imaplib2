@@ -473,60 +473,56 @@ class IMAP4(object):
 
     def ssl_wrap_socket(self):
 
-        try:
-            import ssl
+        import ssl
 
-            TLS_MAP = {}
-            if hasattr(ssl, "PROTOCOL_TLSv1_2"):
-                TLS_MAP[TLS_SECURE] = {
-                    "tls1_2": ssl.PROTOCOL_TLSv1_2,
-                    "tls1_1": ssl.PROTOCOL_TLSv1_1,
-                }
-            else:
-                TLS_MAP[TLS_SECURE] = {}
-            TLS_MAP[TLS_NO_SSL] = TLS_MAP[TLS_SECURE].copy()
-            TLS_MAP[TLS_NO_SSL].update({
-                "tls1": ssl.PROTOCOL_TLSv1,
-            })
-            TLS_MAP[TLS_COMPAT] = TLS_MAP[TLS_NO_SSL].copy()
+        TLS_MAP = {}
+        if hasattr(ssl, "PROTOCOL_TLSv1_2"):
+            TLS_MAP[TLS_SECURE] = {
+                "tls1_2": ssl.PROTOCOL_TLSv1_2,
+                "tls1_1": ssl.PROTOCOL_TLSv1_1,
+            }
+        else:
+            TLS_MAP[TLS_SECURE] = {}
+        TLS_MAP[TLS_NO_SSL] = TLS_MAP[TLS_SECURE].copy()
+        TLS_MAP[TLS_NO_SSL].update({
+            "tls1": ssl.PROTOCOL_TLSv1,
+        })
+        TLS_MAP[TLS_COMPAT] = TLS_MAP[TLS_NO_SSL].copy()
+        TLS_MAP[TLS_COMPAT].update({
+            "ssl23": ssl.PROTOCOL_SSLv23,
+            None: ssl.PROTOCOL_SSLv23,
+        })
+        if hasattr(ssl, "PROTOCOL_SSLv3"):          # Might not be available.
             TLS_MAP[TLS_COMPAT].update({
-                "ssl23": ssl.PROTOCOL_SSLv23,
-                None: ssl.PROTOCOL_SSLv23,
+                "ssl3": ssl.PROTOCOL_SSLv3
             })
-            if hasattr(ssl, "PROTOCOL_SSLv3"):          # Might not be available.
-                TLS_MAP[TLS_COMPAT].update({
-                    "ssl3": ssl.PROTOCOL_SSLv3
-                })
 
+        if self.ca_certs is not None:
+            cert_reqs = ssl.CERT_REQUIRED
+        else:
+            cert_reqs = ssl.CERT_NONE
+
+        if self.tls_level not in TLS_MAP:
+            raise RuntimeError("unknown tls_level: %s" % self.tls_level)
+
+        if self.ssl_version not in TLS_MAP[self.tls_level]:
+            raise ssl.SSLError("Invalid ssl_version '%s' requested for tls_level '%s'" % (self.ssl_version, self.tls_level))
+
+        ssl_version =  TLS_MAP[self.tls_level][self.ssl_version]
+
+        if getattr(ssl, 'HAS_SNI', False):
+            ctx = ssl.SSLContext(ssl_version)
+            ctx.verify_mode = cert_reqs
             if self.ca_certs is not None:
-                cert_reqs = ssl.CERT_REQUIRED
-            else:
-                cert_reqs = ssl.CERT_NONE
+                ctx.load_verify_locations(self.ca_certs)
+            if self.certfile or self.keyfile:
+                ctx.load_cert_chain(self.certfile, self.keyfile)
+            self.sock = ctx.wrap_socket(self.sock, server_hostname=self.host)
+        else:
+            self.sock = ssl.wrap_socket(self.sock, self.keyfile, self.certfile, ca_certs=self.ca_certs, cert_reqs=cert_reqs, ssl_version=ssl_version)
 
-            if self.tls_level not in TLS_MAP:
-                raise RuntimeError("unknown tls_level: %s" % self.tls_level)
-
-            if self.ssl_version not in TLS_MAP[self.tls_level]:
-                raise socket.sslerror("Invalid SSL version '%s' requested for tls_version '%s'" % (self.ssl_version, self.tls_level))
-
-            ssl_version =  TLS_MAP[self.tls_level][self.ssl_version]
-
-            if getattr(ssl, 'HAS_SNI', False):
-                ctx = ssl.SSLContext(ssl_version)
-                ctx.verify_mode = cert_reqs
-                if self.ca_certs is not None:
-                    ctx.load_verify_locations(self.ca_certs)
-                if self.certfile or self.keyfile:
-                    ctx.load_cert_chain(self.certfile, self.keyfile)
-                self.sock = ctx.wrap_socket(self.sock, server_hostname=self.host)
-            else:
-                self.sock = ssl.wrap_socket(self.sock, self.keyfile, self.certfile, ca_certs=self.ca_certs, cert_reqs=cert_reqs, ssl_version=ssl_version)
-
-            ssl_exc = ssl.SSLError
-            self.read_fd = self.sock.fileno()
-        except ImportError:
-            # No ssl module, and socket.ssl has no fileno(), and does not allow certificate verification
-            raise socket.sslerror("imaplib SSL mode does not work without ssl module")
+        ssl_exc = ssl.SSLError
+        self.read_fd = self.sock.fileno()
 
         if self.cert_verify_cb is not None:
             cert_err = self.cert_verify_cb(self.sock.getpeercert(), self.host)
