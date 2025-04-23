@@ -301,7 +301,7 @@ class IMAP4(object):
 
     # These must be encoded according to utf8 setting in _mode_xxx():
     _literal = br'.*{(?P<size>\d+)}$'
-    _untagged_status = br'\* (?P<data>\d+) (?P<type>[A-Z-]+)( (?P<data2>.*))?'
+    _untagged_status = br'\*[ ]+(?P<data>\d+) (?P<type>[A-Z-]+)( (?P<data2>.*))?'
 
     continuation_cre = re.compile(br'\+( (?P<data>.*))?')
     mapCRLF_cre = re.compile(br'\r\n|\r|\n')
