@@ -507,7 +507,7 @@ class IMAP4(object):
                 raise RuntimeError("unknown tls_level: %s" % self.tls_level)
 
             if self.ssl_version not in TLS_MAP[self.tls_level]:
-                raise ValueError("Invalid SSL version '%s' requested for tls_version '%s'" % (self.ssl_version, self.tls_level))
+                raise ValueError("Invalid SSL version '%s' requested for tls_level '%s'" % (self.ssl_version, self.tls_level))
 
             ssl_version =  TLS_MAP[self.tls_level][self.ssl_version]
 
