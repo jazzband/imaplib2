@@ -526,7 +526,7 @@ class IMAP4(object):
             self.read_fd = self.sock.fileno()
         except ImportError:
             # No ssl module, and socket.ssl has no fileno(), and does not allow certificate verification
-            raise socket.sslerror("imaplib SSL mode does not work without ssl module")
+            raise ImportError("imaplib SSL mode does not work without ssl module")
 
         if self.cert_verify_cb is not None:
             cert_err = self.cert_verify_cb(self.sock.getpeercert(), self.host)
