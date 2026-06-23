@@ -507,7 +507,7 @@ class IMAP4(object):
                 raise RuntimeError("unknown tls_level: %s" % self.tls_level)
 
             if self.ssl_version not in TLS_MAP[self.tls_level]:
-                raise socket.sslerror("Invalid SSL version '%s' requested for tls_version '%s'" % (self.ssl_version, self.tls_level))
+                raise ValueError("Invalid SSL version '%s' requested for tls_level '%s'" % (self.ssl_version, self.tls_level))
 
             ssl_version =  TLS_MAP[self.tls_level][self.ssl_version]
 
@@ -526,7 +526,7 @@ class IMAP4(object):
             self.read_fd = self.sock.fileno()
         except ImportError:
             # No ssl module, and socket.ssl has no fileno(), and does not allow certificate verification
-            raise socket.sslerror("imaplib SSL mode does not work without ssl module")
+            raise ImportError("imaplib SSL mode does not work without ssl module")
 
         if self.cert_verify_cb is not None:
             cert_err = self.cert_verify_cb(self.sock.getpeercert(), self.host)
