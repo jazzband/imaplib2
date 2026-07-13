@@ -411,7 +411,7 @@ class IMAP4(object):
                 break
             else:
                 raise self.error('server not IMAP4 compliant')
-        except:
+        except Exception:
             self._close_threads()
             raise
 
@@ -959,7 +959,7 @@ class IMAP4(object):
         try:
             try:
                 typ, dat = self._simple_command('LOGOUT')
-            except:
+            except Exception:
                 typ, dat = 'NO', ['%s: %s' % sys.exc_info()[:2]]
                 if __debug__: self._log(1, dat)
 
@@ -1788,7 +1788,7 @@ class IMAP4(object):
 
             try:
                 self._put_response(line)
-            except:
+            except Exception:
                 typ, val = self.error, 'program error: %s - %s' % sys.exc_info()[:2]
                 break
 
@@ -1883,7 +1883,7 @@ class IMAP4(object):
 
                 if state & ~(select.POLLIN):
                     raise IOError(poll_error(state))
-            except:
+            except Exception:
                 reason = 'socket error: %s - %s' % sys.exc_info()[:2]
                 if __debug__:
                     if not self.Terminate:
@@ -1947,7 +1947,7 @@ class IMAP4(object):
                     self.inq.put(line)
                     if self.TerminateReader:
                         terminate = True
-            except:
+            except Exception:
                 reason = 'socket error: %s - %s' % sys.exc_info()[:2]
                 if __debug__:
                     if not self.Terminate:
@@ -1976,7 +1976,7 @@ class IMAP4(object):
             try:
                 self.send(rqb.data)
                 if __debug__: self._log(4, '> %r' % rqb.data)
-            except:
+            except Exception:
                 reason = 'socket error: %s - %s' % sys.exc_info()[:2]
                 if __debug__:
                     if not self.Terminate:
@@ -2072,7 +2072,7 @@ class IMAP4(object):
             while n:
                 try:
                     self._mesg(*self._cmd_log[i])
-                except:
+                except Exception:
                     pass
                 i += 1
                 if i >= self._cmd_log_len:
@@ -2541,7 +2541,7 @@ if __name__ == '__main__':
             else:
                 typ, dat = getattr(M, cmd)(*args)
                 M._log(1, '%s %.100s => %s %.100s' % (cmd, args, typ, dat))
-        except:
+        except Exception:
             M._log(1, '%s - %s' % sys.exc_info()[:2])
             M.logout()
             raise
@@ -2634,7 +2634,7 @@ if __name__ == '__main__':
 
         print('All tests OK.')
 
-    except:
+    except Exception:
         if not idle_intr or M is None or not 'IDLE' in M.capabilities:
             print('Tests failed.')
 
