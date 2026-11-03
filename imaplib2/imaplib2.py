@@ -477,6 +477,10 @@ class IMAP4(object):
             import ssl
 
             TLS_MAP = {}
+            # Python 3.14 removed the legacy PROTOCOL_TLSv1* constants
+            # (PROTOCOL_TLS negotiates the highest supported version, so
+            # fall back to it for each removed alias).
+            _tls_default = ssl.PROTOCOL_TLS
             if hasattr(ssl, "PROTOCOL_TLSv1_2"):
                 TLS_MAP[TLS_SECURE] = {
                     "tls1_2": ssl.PROTOCOL_TLSv1_2,
@@ -484,14 +488,16 @@ class IMAP4(object):
                 }
             else:
                 TLS_MAP[TLS_SECURE] = {}
+            TLS_MAP[TLS_SECURE].setdefault("tls1_2", _tls_default)
+            TLS_MAP[TLS_SECURE].setdefault("tls1_1", _tls_default)
             TLS_MAP[TLS_NO_SSL] = TLS_MAP[TLS_SECURE].copy()
             TLS_MAP[TLS_NO_SSL].update({
-                "tls1": ssl.PROTOCOL_TLSv1,
+                "tls1": getattr(ssl, "PROTOCOL_TLSv1", _tls_default),
             })
             TLS_MAP[TLS_COMPAT] = TLS_MAP[TLS_NO_SSL].copy()
             TLS_MAP[TLS_COMPAT].update({
-                "ssl23": ssl.PROTOCOL_SSLv23,
-                None: ssl.PROTOCOL_SSLv23,
+                "ssl23": getattr(ssl, "PROTOCOL_SSLv23", _tls_default),
+                None: getattr(ssl, "PROTOCOL_SSLv23", _tls_default),
             })
             if hasattr(ssl, "PROTOCOL_SSLv3"):          # Might not be available.
                 TLS_MAP[TLS_COMPAT].update({
