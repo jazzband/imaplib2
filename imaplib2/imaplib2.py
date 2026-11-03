@@ -515,7 +515,10 @@ class IMAP4(object):
                 ctx = ssl.SSLContext(ssl_version)
                 ctx.verify_mode = cert_reqs
                 if self.ca_certs is not None:
-                    ctx.load_verify_locations(self.ca_certs)
+                    if isinstance(self.ca_certs, dict):
+                        ctx.load_verify_locations(**self.ca_certs)
+                    else:
+                        ctx.load_verify_locations(self.ca_certs)
                 if self.certfile or self.keyfile:
                     ctx.load_cert_chain(self.certfile, self.keyfile)
                 self.sock = ctx.wrap_socket(self.sock, server_hostname=self.host)
