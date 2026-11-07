@@ -2385,8 +2385,9 @@ def Time2Internaldate(date_time):
     from datetime import datetime, timezone, timedelta
 
     if isinstance(date_time, (int, float)):
-        tt = time.localtime(date_time)
-    elif isinstance(date_time, tuple):
+        date_time = time.localtime(date_time)
+
+    if isinstance(date_time, tuple):
         try:
             gmtoff = date_time.tm_gmtoff
         except AttributeError:
